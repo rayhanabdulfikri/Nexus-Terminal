@@ -9,6 +9,14 @@ export default function RiskFullScreen() {
     const chartRefExposure = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        const handleEsc = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setActiveView("DASHBOARD");
+        };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, [setActiveView]);
+
+    useEffect(() => {
         if (!chartRefVaR.current || !chartRefExposure.current) return;
 
         const chartVaR = echarts.init(chartRefVaR.current);

@@ -94,6 +94,14 @@ export default function MacroFullScreen() {
 
     const data = MACRO_COUNTRIES[selectedCountry];
 
+    useEffect(() => {
+        const handleEsc = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setActiveView("DASHBOARD");
+        };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, [setActiveView]);
+
     // ── GDP / CPI + Rate history charts ──
     useEffect(() => {
         if (activeTab !== 'macro') return;

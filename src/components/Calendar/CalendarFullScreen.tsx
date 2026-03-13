@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import calendarData from '../../data/major_currencies_calendar.json';
 import '../MacroRegime/MacroFullScreen.css';
 import { useTerminal } from '../../context/TerminalContext';
@@ -7,6 +7,14 @@ export default function CalendarFullScreen() {
     const { setActiveView } = useTerminal();
     const [filter, setFilter] = useState("ALL");
     const [impact, setImpact] = useState("ALL");
+
+    useEffect(() => {
+        const handleEsc = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setActiveView("DASHBOARD");
+        };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, [setActiveView]);
 
     const events = useMemo(() => {
         let data = calendarData.events;

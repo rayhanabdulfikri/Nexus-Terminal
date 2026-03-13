@@ -40,18 +40,46 @@ const Sentiment = ({ defaultView = 'COT' }: SentimentProps) => {
     const [selectedAsset, setSelectedAsset] = useState('Euro FX');
     const [explorerType, setExplorerType] = useState<'NET' | 'LS' | 'OI'>('NET');
 
-    // Retail mock data
-    const sentimentData = {
-        data: [
-            { pair: 'EUR/USD', long_pct: 38, short_pct: 62, net_vol: -14201 },
-            { pair: 'USD/JPY', long_pct: 64, short_pct: 36, net_vol: 8241 },
-            { pair: 'GBP/USD', long_pct: 33, short_pct: 67, net_vol: -11029 },
-            { pair: 'AUD/USD', long_pct: 74, short_pct: 26, net_vol: 5422 },
-            { pair: 'USD/CHF', long_pct: 55, short_pct: 45, net_vol: 2101 },
-            { pair: 'NZD/USD', long_pct: 58, short_pct: 42, net_vol: 1401 },
-            { pair: 'XAU/USD', long_pct: 82, short_pct: 18, net_vol: 22401 },
-        ]
-    };
+    // Retail mock data with state for live updates
+    const [retailData, setRetailData] = useState([
+        { pair: 'EUR/USD', long_pct: 38, short_pct: 62, net_vol: -14201 },
+        { pair: 'USD/JPY', long_pct: 64, short_pct: 36, net_vol: 8241 },
+        { pair: 'GBP/USD', long_pct: 33, short_pct: 67, net_vol: -11029 },
+        { pair: 'AUD/USD', long_pct: 74, short_pct: 26, net_vol: 5422 },
+        { pair: 'USD/CHF', long_pct: 55, short_pct: 45, net_vol: 2101 },
+        { pair: 'NZD/USD', long_pct: 58, short_pct: 42, net_vol: 1401 },
+        { pair: 'XAU/USD', long_pct: 82, short_pct: 18, net_vol: 22401 },
+    ]);
+
+    // Overview gauges state
+    const [gauges, setGauges] = useState([
+        { label: 'OVERALL BIAS', val: 'BULLISH', score: 72, color: 'var(--bb-green)', sub: 'Based on top primary assets' },
+        { label: 'EXTREMITY', val: 'LOW', score: 28, color: 'var(--bb-blue)', sub: 'Pairs exceeding 2.0σ or 70%' },
+        { label: 'CROWD POWER', val: 'STRONG', score: 84, color: 'var(--bb-blue)', sub: 'Volume weighted momentum' },
+        { label: 'SIGNAL COUNT', val: '4 ACTIVE', score: 40, color: 'var(--bb-blue)', sub: 'Divergence and contra setups' },
+    ]);
+
+    // Live sentiment updates
+    useEffect(() => {
+        const timer = setInterval(() => {
+            // Update retail
+            setRetailData(prev => prev.map(p => {
+                if (Math.random() > 0.7) {
+                    const shift = Math.random() > 0.5 ? 1 : -1;
+                    const newLong = Math.max(10, Math.min(90, p.long_pct + shift));
+                    return { ...p, long_pct: newLong, short_pct: 100 - newLong, net_vol: p.net_vol + (Math.random() - 0.5) * 100 };
+                }
+                return p;
+            }));
+
+            // Update gauges
+            setGauges(prev => prev.map(g => ({
+                ...g,
+                score: Math.max(5, Math.min(95, g.score + (Math.random() - 0.5) * 3))
+            })));
+        }, 2000);
+        return () => clearInterval(timer);
+    }, []);
 
     useEffect(() => {
         if (defaultView === 'COT' || defaultView === 'RETAIL') {
@@ -95,13 +123,13 @@ const Sentiment = ({ defaultView = 'COT' }: SentimentProps) => {
         }
     }, [actionTab, explorerType, selectedAsset]);
 
-    const renderGauge = (label: string, value: string, color: string, sub: string) => (
+    const renderGauge = (label: string, value: string, color: string, sub: string, score: number) => (
         <div className="tp-gauge-box animate-fade">
             <div className="tp-gauge-label">{label}</div>
             <div className="tp-gauge-main">
                 <span className="tp-gauge-val" style={{ color }}>{value}</span>
                 <div className="tp-gauge-track">
-                    <div className="tp-gauge-fill" style={{ background: color, width: label.includes('Z-SCORE') ? '70%' : '50%', boxShadow: `0 0 10px ${color}` }}></div>
+                    <div className="tp-gauge-fill" style={{ background: color, width: `${score}%`, boxShadow: `0 0 10px ${color}`, transition: 'width 0.8s ease-out' }}></div>
                 </div>
             </div>
             <div className="tp-gauge-sub">{sub}</div>
@@ -197,16 +225,16 @@ const Sentiment = ({ defaultView = 'COT' }: SentimentProps) => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {sentimentData.data.map((pair, idx) => (
-                                    <tr key={idx} className="tp-row-premium" onClick={() => setActiveTicker(pair.pair)}>
+                                {retailData.map((pair, idx) => (
+                                    <tr key={idx} className="tp-row-premium" onClick={() => setActiveTicker(pair.pair.replace('/',''))}>
                                         <td className="text-amber fw-800">{pair.pair}</td>
                                         <td className="text-pos">{pair.long_pct}%</td>
                                         <td className="text-neg">{pair.short_pct}%</td>
-                                        <td className={pair.net_vol > 0 ? 'text-pos' : 'text-neg'}>{pair.net_vol > 0 ? '+' : ''}{pair.net_vol.toLocaleString()}</td>
+                                        <td className={pair.net_vol > 0 ? 'text-pos' : 'text-neg'}>{pair.net_vol > 0 ? '+' : ''}{Math.round(pair.net_vol).toLocaleString()}</td>
                                         <td>
                                             <div className="tp-sent-track">
-                                                <div style={{ width: `${pair.long_pct}%`, background: 'var(--bb-green)' }} />
-                                                <div style={{ width: `${pair.short_pct}%`, background: 'var(--bb-red)' }} />
+                                                <div style={{ width: `${pair.long_pct}%`, background: 'var(--bb-green)', transition: 'width 0.5s ease' }} />
+                                                <div style={{ width: `${pair.short_pct}%`, background: 'var(--bb-red)', transition: 'width 0.5s ease' }} />
                                             </div>
                                         </td>
                                         <td className={pair.long_pct > pair.short_pct ? 'text-pos' : 'text-neg'}>{pair.long_pct > pair.short_pct ? 'BULL' : 'BEAR'}</td>
@@ -226,11 +254,9 @@ const Sentiment = ({ defaultView = 'COT' }: SentimentProps) => {
                         <span className="tp-banner-title">{mainTab} MARKET-WIDE SENTIMENT SCORECARD</span>
                     </div>
                     <div className="tp-gauge-grid">
-                        {renderGauge('OVERALL BIAS', mainTab === 'COT' ? 'BULLISH' : 'MIXED', mainTab === 'COT' ? 'var(--bb-green)' : 'var(--bb-amber)', 'Based on top primary assets')}
-                        {renderGauge('EXTREMITY', mainTab === 'COT' ? 'LOW' : 'HIGH', mainTab === 'COT' ? 'var(--bb-blue)' : 'var(--bb-red)', 'Pairs exceeding 2.0σ or 70%')}
-                        {renderGauge('CROWD POWER', mainTab === 'COT' ? 'STRONG' : 'MODERATE', mainTab === 'COT' ? 'var(--bb-blue)' : 'var(--bb-green)', 'Volume weighted momentum')}
-                        {renderGauge('SIGNAL COUNT', '4 ACTIVE', 'var(--bb-blue)', 'Divergence and contra setups')}
+                        {gauges.map(g => renderGauge(g.label, g.val, g.color, g.sub, g.score))}
                     </div>
+
                     <div className="tp-overview-details mt-12 glass p-4">
                         <h4 className="text-blue fs-12 mb-2">KEY DEVELOPMENTS</h4>
                         <ul className="fs-11 text-dim">

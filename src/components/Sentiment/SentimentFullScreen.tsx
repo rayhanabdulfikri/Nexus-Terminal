@@ -1,9 +1,18 @@
+import { useEffect } from 'react';
 import Sentiment from './Sentiment';
 import '../MacroRegime/MacroFullScreen.css';
 import { useTerminal } from '../../context/TerminalContext';
 
 export default function SentimentFullScreen() {
     const { setActiveView } = useTerminal();
+
+    useEffect(() => {
+        const handleEsc = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setActiveView("DASHBOARD");
+        };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, [setActiveView]);
 
     return (
         <div className="macro-fs-container" style={{ background: '#02090b' }}>

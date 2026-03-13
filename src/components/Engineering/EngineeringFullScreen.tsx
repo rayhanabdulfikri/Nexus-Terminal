@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import * as echarts from 'echarts';
 import '../MacroRegime/MacroFullScreen.css';
 import { useTerminal } from '../../context/TerminalContext';
 
-// ── Strategy definitions matching the Systematic Trading mindmap branch ──
+// ── Strategy definitions ──
 const STRATEGIES = [
     {
         id: "momentum",
@@ -53,28 +53,123 @@ const RISK_PREMIA = [
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
+// ── Backtest dummy trade log ──
+const BACKTEST_TRADES = [
+    { date: '2024-01-05', ticker: 'EURUSD', side: 'LONG', entry: '1.0722', exit: '1.0850', pnl: '+$1,280', pips: '+128', duration: '3d', result: 'WIN' },
+    { date: '2024-01-12', ticker: 'USDJPY', side: 'SHORT', entry: '145.80', exit: '143.20', pnl: '+$2,600', pips: '+260', duration: '5d', result: 'WIN' },
+    { date: '2024-01-19', ticker: 'XAUUSD', side: 'LONG', entry: '2022.50', exit: '2009.00', pnl: '-$1,350', pips: '-135', duration: '2d', result: 'LOSS' },
+    { date: '2024-01-26', ticker: 'GBPUSD', side: 'LONG', entry: '1.2680', exit: '1.2742', pnl: '+$620', pips: '+62', duration: '1d', result: 'WIN' },
+    { date: '2024-02-02', ticker: 'BTCUSD', side: 'LONG', entry: '42100', exit: '45800', pnl: '+$3,700', pips: '+3700', duration: '8d', result: 'WIN' },
+    { date: '2024-02-09', ticker: 'EURUSD', side: 'SHORT', entry: '1.0790', exit: '1.0820', pnl: '-$300', pips: '-30', duration: '1d', result: 'LOSS' },
+    { date: '2024-02-16', ticker: 'USDJPY', side: 'LONG', entry: '149.20', exit: '150.85', pnl: '+$1,650', pips: '+165', duration: '4d', result: 'WIN' },
+    { date: '2024-02-23', ticker: 'XAUUSD', side: 'LONG', entry: '2030.00', exit: '2064.50', pnl: '+$3,450', pips: '+345', duration: '6d', result: 'WIN' },
+];
+
+// ── Animated equity curve for backtest ──
+function generateBacktestEquity(numPoints: number) {
+    const data: { x: string; strategy: number; benchmark: number }[] = [];
+    let strat = 100, bench = 100;
+    const startDate = new Date('2023-01-01');
+    for (let i = 0; i < numPoints; i++) {
+        const date = new Date(startDate.getTime() + i * 7 * 86400000);
+        const label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        strat = strat * (1 + (Math.random() - 0.37) * 0.025);
+        bench = bench * (1 + (Math.random() - 0.46) * 0.018);
+        data.push({ x: label, strategy: parseFloat(strat.toFixed(2)), benchmark: parseFloat(bench.toFixed(2)) });
+    }
+    return data;
+}
+
+const FULL_BACKTEST_DATA = generateBacktestEquity(60);
+
 export default function EngineeringFullScreen() {
     const { setActiveView } = useTerminal();
     const [activeTab, setActiveTab] = useState<"systematic" | "backtest" | "riskparity">("systematic");
     const [activeStrategy, setActiveStrategy] = useState("momentum");
+    const [isRunning, setIsRunning] = useState(false);
+    const [progress, setProgress] = useState(0);
+    const [visiblePoints, setVisiblePoints] = useState(FULL_BACKTEST_DATA.length);
+    const [liveLog, setLiveLog] = useState<string[]>([]);
+    const [backtestMetrics, setBacktestMetrics] = useState({ sharpe: 2.84, pf: 1.95, maxDD: -12.4, winRate: 64.2, calmar: 1.48 });
+
     const chartRefEquity = useRef<HTMLDivElement>(null);
     const chartRefHeat   = useRef<HTMLDivElement>(null);
     const chartRefRP     = useRef<HTMLDivElement>(null);
+    const chartRefBT     = useRef<HTMLDivElement>(null);
 
-
-
-    // ── Equity curve + heatmap charts ──
+    // ESC to close
     useEffect(() => {
-        if (!chartRefEquity.current) return;
-        const chart = echarts.init(chartRefEquity.current);
+        const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setActiveView('DASHBOARD'); };
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+    }, [setActiveView]);
 
+    // ── Real-time fluctuating metrics for sidebar ──
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setBacktestMetrics(prev => ({
+                sharpe: parseFloat((prev.sharpe + (Math.random() - 0.5) * 0.04).toFixed(2)),
+                pf: parseFloat((prev.pf + (Math.random() - 0.5) * 0.02).toFixed(2)),
+                maxDD: parseFloat((prev.maxDD + (Math.random() - 0.5) * 0.15).toFixed(1)),
+                winRate: parseFloat((prev.winRate + (Math.random() - 0.5) * 0.2).toFixed(1)),
+                calmar: parseFloat((prev.calmar + (Math.random() - 0.5) * 0.02).toFixed(2)),
+            }));
+        }, 1500);
+        return () => clearInterval(interval);
+    }, []);
+
+    // ── Run Backtest animation ──
+    const runBacktest = useCallback(() => {
+        if (isRunning) return;
+        setIsRunning(true);
+        setProgress(0);
+        setVisiblePoints(0);
+        setLiveLog([]);
+
+        const logMessages = [
+            '[ENGINE] Initializing Mean Reversion v1.2 strategy...',
+            '[DATA] Loading 5-year OHLCV data: EURUSD, USDJPY, XAUUSD, BTCUSD...',
+            '[ENGINE] Running 1,200,000 Monte Carlo iterations...',
+            '[FILTER] Applying regime filter: Expansion & Risk-On only...',
+            '[SIGNAL] Entry criteria: Z-score > 2.0, RSI < 35 or > 65...',
+            '[RISK] Position sizing: 25bps risk per trade, max 4 concurrent...',
+            '[EXEC] Simulating slippage: 0.5 pips average, 2 pips spike...',
+            '[RESULT] NY/LDN overlap alpha identified in JPY pairs...',
+            '[RESULT] Historical analog: 2018 Rate Hike Cycle — 78% similarity...',
+            '[COMPLETE] ▶ Backtest complete. 1,248 trades simulated.',
+            '[SUGGEST] Increase leverage on EUR/USD during LDN open (07:00-10:00 UTC).',
+        ];
+
+        let step = 0;
+        const total = FULL_BACKTEST_DATA.length;
+        const interval = setInterval(() => {
+            step++;
+            const pct = Math.round((step / total) * 100);
+            setProgress(pct);
+            setVisiblePoints(step);
+
+            // Add log messages at key steps
+            const logIdx = Math.floor((step / total) * logMessages.length);
+            setLiveLog(() => logMessages.slice(0, logIdx + 1));
+
+            if (step >= total) {
+                clearInterval(interval);
+                setIsRunning(false);
+            }
+        }, 60);
+    }, [isRunning]);
+
+    // ── Equity curve chart (strategy comparison tab) ──
+    useEffect(() => {
+        if (!chartRefEquity.current || activeTab !== 'systematic') return;
+        const chart = echarts.init(chartRefEquity.current);
         chart.setOption({
             backgroundColor: 'transparent',
             tooltip: { trigger: 'axis', backgroundColor: '#0b2730', borderColor: '#1a3a4a', textStyle: { color: '#cbd5e1' } },
             legend: { data: STRATEGIES.map(s => s.label), bottom: 0, textStyle: { color: '#5c8397' }, icon: 'circle', itemWidth: 8, itemHeight: 8 },
             grid: { left: '6%', right: '3%', bottom: '12%', top: '8%' },
             xAxis: { type: 'category', data: MONTHS, axisLabel: { color: '#5c8397', fontSize: 10 }, axisLine: { lineStyle: { color: '#163344' } } },
-            yAxis: { type: 'value', axisLabel: { color: '#5c8397', fontSize: 10, formatter: '{value}' }, splitLine: { lineStyle: { color: '#163344', type: 'dashed' } } },
+            yAxis: { type: 'value', axisLabel: { color: '#5c8397', fontSize: 10 }, splitLine: { lineStyle: { color: '#163344', type: 'dashed' } } },
             series: STRATEGIES.map(s => ({
                 name: s.label, type: 'line',
                 data: s.equity,
@@ -84,29 +179,26 @@ export default function EngineeringFullScreen() {
                 smooth: true,
             })),
         });
-
         const resize = () => chart.resize();
         window.addEventListener('resize', resize);
         return () => { window.removeEventListener('resize', resize); chart.dispose(); };
-    }, [activeStrategy]);
+    }, [activeStrategy, activeTab]);
 
+    // ── Heatmap chart ──
     useEffect(() => {
-        if (!chartRefHeat.current) return;
+        if (!chartRefHeat.current || activeTab !== 'systematic') return;
         const chart = echarts.init(chartRefHeat.current);
-
         const days = ['Mon','Tue','Wed','Thu','Fri'];
         const hours = Array.from({length: 24}, (_, i) => `${i}h`);
         const data: [number, number, number][] = [];
         for (let d = 0; d < 5; d++) {
             for (let h = 0; h < 24; h++) {
-                // Simulate realistic profitability pattern: peaks at London/NY open
                 const isLDN = h >= 7 && h <= 10;
                 const isNY  = h >= 13 && h <= 16;
                 const base  = isLDN || isNY ? 6 : (h < 4 || h > 20 ? 2 : 4);
                 data.push([h, d, Math.max(0, base + Math.floor((Math.random() - 0.3) * 4))]);
             }
         }
-
         chart.setOption({
             backgroundColor: 'transparent',
             tooltip: { position: 'top', formatter: (p: any) => `${days[p.data[1]]} ${hours[p.data[0]]}: Score ${p.data[2]}/10` },
@@ -116,17 +208,64 @@ export default function EngineeringFullScreen() {
             visualMap: { min: 0, max: 10, calculable: false, orient: 'horizontal', left: 'center', bottom: '0%', textStyle: { color: '#5c8397', fontSize: 9 }, inRange: { color: ['#020a0e', '#0a2a38', '#00b8e0', '#00e676'] }, itemWidth: 12, itemHeight: 8 },
             series: [{ type: 'heatmap', data, emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.5)' } } }],
         });
-
         const resize = () => chart.resize();
         window.addEventListener('resize', resize);
         return () => { window.removeEventListener('resize', resize); chart.dispose(); };
-    }, []);
+    }, [activeTab]);
 
-    // ── Risk Premia chart ──
+    // ── Backtest equity chart ── init once, update on each visiblePoints change
+    useEffect(() => {
+        if (!chartRefBT.current || activeTab !== 'backtest') return;
+        // Get existing instance or init new one
+        let chart = echarts.getInstanceByDom(chartRefBT.current);
+        if (!chart) chart = echarts.init(chartRefBT.current);
+        const sliced = FULL_BACKTEST_DATA.slice(0, Math.max(visiblePoints, 1));
+        chart.setOption({
+            backgroundColor: 'transparent',
+            animation: false,
+            tooltip: { trigger: 'axis', backgroundColor: '#0b2730', borderColor: '#1a3a4a', textStyle: { color: '#cbd5e1', fontSize: 10 } },
+            legend: { data: ['STRATEGY', 'BENCHMARK'], bottom: 0, textStyle: { color: '#5c8397', fontSize: 9 }, icon: 'circle', itemWidth: 8, itemHeight: 8 },
+            grid: { left: '6%', right: '3%', bottom: '12%', top: '8%' },
+            xAxis: { type: 'category', data: sliced.map(d => d.x), axisLabel: { color: '#5c8397', fontSize: 8, interval: Math.max(0, Math.floor(sliced.length / 8)) }, axisLine: { lineStyle: { color: '#163344' } }, boundaryGap: false },
+            yAxis: { type: 'value', axisLabel: { color: '#5c8397', fontSize: 9, formatter: '{value}' }, splitLine: { lineStyle: { color: '#163344', type: 'dashed' } } },
+            series: [
+                {
+                    name: 'STRATEGY', type: 'line',
+                    data: sliced.map(d => d.strategy),
+                    itemStyle: { color: '#00e676' },
+                    lineStyle: { color: '#00e676', width: 2 },
+                    areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(0,230,118,0.2)' }, { offset: 1, color: 'rgba(0,230,118,0)' }]) },
+                    smooth: true, symbolSize: 0,
+                },
+                {
+                    name: 'BENCHMARK', type: 'line',
+                    data: sliced.map(d => d.benchmark),
+                    itemStyle: { color: '#5c8397' },
+                    lineStyle: { color: '#5c8397', width: 1.5, type: 'dashed' },
+                    smooth: true, symbolSize: 0,
+                },
+            ],
+        }, false); // merge=false to replace, no full reinit
+        const resize = () => chart && chart.resize();
+        window.addEventListener('resize', resize);
+        return () => {
+            window.removeEventListener('resize', resize);
+            // Don't dispose on every tick — only when tab changes
+        };
+    }, [activeTab, visiblePoints]);
+
+    // Dispose backtest chart when leaving tab
+    useEffect(() => {
+        if (activeTab !== 'backtest' && chartRefBT.current) {
+            const inst = echarts.getInstanceByDom(chartRefBT.current);
+            if (inst) inst.dispose();
+        }
+    }, [activeTab]);
+
+    // ── Risk Premia radar chart ──
     useEffect(() => {
         if (!chartRefRP.current || activeTab !== 'riskparity') return;
         const chart = echarts.init(chartRefRP.current);
-
         chart.setOption({
             backgroundColor: 'transparent',
             tooltip: { trigger: 'item', formatter: (p: any) => `${p.name}: ${p.value}%` },
@@ -148,7 +287,6 @@ export default function EngineeringFullScreen() {
                 }],
             }],
         });
-
         const resize = () => chart.resize();
         window.addEventListener('resize', resize);
         return () => { window.removeEventListener('resize', resize); chart.dispose(); };
@@ -163,10 +301,13 @@ export default function EngineeringFullScreen() {
                         STRATEGY FRAMEWORK · FACTORS & RISK PREMIA · BACKTESTING · {new Date().toLocaleDateString()}
                     </div>
                 </div>
-                <button className="macro-fs-close" onClick={() => setActiveView("DASHBOARD")}>✕ CLOSE</button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <span style={{ fontSize: '10px', color: 'var(--bb-text-dim)' }}><span className="kbd" style={{ fontSize: '9px' }}>ESC</span> CLOSE</span>
+                    <button className="macro-fs-close" onClick={() => setActiveView('DASHBOARD')}>✕ CLOSE</button>
+                </div>
             </div>
 
-            {/* ── Tab Bar ── */}
+            {/* Tab Bar */}
             <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--bb-teal-border)', background: 'rgba(2,8,14,0.8)', flexShrink: 0 }}>
                 {[
                     { id: 'systematic', label: 'STRATEGY COMPARISON' },
@@ -190,7 +331,6 @@ export default function EngineeringFullScreen() {
                 {/* ──────────── TAB 1: Strategy Comparison ──────────── */}
                 {activeTab === 'systematic' && (
                     <>
-                        {/* Strategy Selector + Metrics */}
                         <div style={{ display: 'flex', gap: '12px', padding: '12px', flexShrink: 0 }}>
                             {STRATEGIES.map(s => (
                                 <div key={s.id}
@@ -217,8 +357,6 @@ export default function EngineeringFullScreen() {
                                 </div>
                             ))}
                         </div>
-
-                        {/* Equity Curve */}
                         <div style={{ flex: 1, padding: '0 12px 12px', minHeight: 0 }}>
                             <div style={{ background: 'rgba(8,22,30,0.6)', border: '1px solid var(--bb-teal-border)', borderRadius: '3px', height: '100%', padding: '8px' }}>
                                 <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-blue)', letterSpacing: '0.1em', marginBottom: '4px' }}>
@@ -232,54 +370,132 @@ export default function EngineeringFullScreen() {
 
                 {/* ──────────── TAB 2: Backtest Engine ──────────── */}
                 {activeTab === 'backtest' && (
-                    <>
-                        <div className="p-metrics-row" style={{ padding: '12px' }}>
-                            {[
-                                { label: 'SHARPE RATIO',   val: '2.84',  sub: 'Excessive Alpha',       color: 'var(--bb-green)' },
-                                { label: 'PROFIT FACTOR',  val: '1.95',  sub: 'Gross Win / Loss',      color: 'var(--bb-blue)' },
-                                { label: 'MAX DRAWDOWN',   val: '-12.4%',sub: 'Recovery: 22 days',     color: 'var(--bb-red)' },
-                                { label: 'WIN RATE',       val: '64.2%', sub: 'Trades: 1,248',         color: 'var(--bb-amber)' },
-                                { label: 'CALMAR RATIO',   val: '1.48',  sub: 'CAGR / MaxDD',          color: 'var(--bb-green)' },
-                            ].map(m => (
-                                <div key={m.label} className="p-metric-card" style={{ borderTopColor: m.color }}>
-                                    <div className="p-mc-title">{m.label}</div>
-                                    <div className="p-mc-val" style={{ color: m.color }}>{m.val}</div>
-                                    <div className="p-mc-sub">{m.sub}</div>
-                                </div>
-                            ))}
+                    <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+                        {/* Left Panel: Controls + Metrics */}
+                        <div style={{ width: '260px', borderRight: '1px solid var(--bb-teal-border)', display: 'flex', flexDirection: 'column', flexShrink: 0, overflow: 'hidden' }}>
+                            {/* Config */}
+                            <div style={{ padding: '12px', borderBottom: '1px solid var(--bb-teal-border)', flexShrink: 0 }}>
+                                <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-amber)', letterSpacing: '0.12em', marginBottom: '10px' }}>BACKTEST CONFIGURATION</div>
+                                {[
+                                    { label: 'STRATEGY', value: 'Mean Reversion v1.2' },
+                                    { label: 'UNIVERSE', value: 'G10 FX + Gold + BTC' },
+                                    { label: 'PERIOD', value: 'Jan 2023 – Dec 2024' },
+                                    { label: 'INITIAL CAPITAL', value: '$10,000,000' },
+                                    { label: 'RISK/TRADE', value: '0.25% (25bps)' },
+                                    { label: 'SLIPPAGE', value: '0.5 pips avg' },
+                                    { label: 'COMMISSION', value: '$5/100K notional' },
+                                ].map(r => (
+                                    <div key={r.label} style={{ display: 'flex', flexDirection: 'column', padding: '4px 0', borderBottom: '1px solid rgba(22,51,68,0.3)' }}>
+                                        <span style={{ fontSize: '8px', color: 'var(--bb-text-dim)', fontWeight: 800, letterSpacing: '0.08em' }}>{r.label}</span>
+                                        <span style={{ fontSize: '10px', color: 'var(--bb-text)', fontFamily: 'var(--font-mono)', marginTop: '1px' }}>{r.value}</span>
+                                    </div>
+                                ))}
+                                <button onClick={runBacktest} disabled={isRunning} style={{
+                                    width: '100%', marginTop: '12px', padding: '9px', cursor: isRunning ? 'wait' : 'pointer',
+                                    background: isRunning ? 'rgba(0,184,224,0.1)' : 'linear-gradient(135deg, #003a1a, #00802a)',
+                                    color: isRunning ? 'var(--bb-blue)' : '#00ff8f',
+                                    fontSize: '10px', fontWeight: 800, letterSpacing: '0.1em', borderRadius: '2px',
+                                    border: '1px solid rgba(0,255,143,0.2)',
+                                }}>
+                                    {isRunning ? `▶ RUNNING... ${progress}%` : '▶ RUN BACKTEST'}
+                                </button>
+                                {isRunning && (
+                                    <div style={{ marginTop: '6px', background: 'rgba(22,51,68,0.5)', borderRadius: '2px', height: '4px', overflow: 'hidden' }}>
+                                        <div style={{ height: '100%', background: 'linear-gradient(90deg, #00b8e0, #00ff8f)', width: `${progress}%`, transition: 'width 0.1s' }} />
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Live Metrics */}
+                            <div style={{ padding: '12px', flex: 1, overflowY: 'auto' }}>
+                                <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-blue)', letterSpacing: '0.12em', marginBottom: '10px' }}>LIVE PERFORMANCE METRICS</div>
+                                {[
+                                    { label: 'SHARPE RATIO', value: backtestMetrics.sharpe.toFixed(2), color: 'var(--bb-green)', sub: 'Risk-Adj Return' },
+                                    { label: 'PROFIT FACTOR', value: backtestMetrics.pf.toFixed(2), color: 'var(--bb-blue)', sub: 'Gross Win / Loss' },
+                                    { label: 'MAX DRAWDOWN', value: `${backtestMetrics.maxDD.toFixed(1)}%`, color: 'var(--bb-red)', sub: 'Peak-to-Trough' },
+                                    { label: 'WIN RATE', value: `${backtestMetrics.winRate.toFixed(1)}%`, color: 'var(--bb-amber)', sub: '1,248 trades' },
+                                    { label: 'CALMAR RATIO', value: backtestMetrics.calmar.toFixed(2), color: 'var(--bb-green)', sub: 'CAGR / MaxDD' },
+                                ].map(m => (
+                                    <div key={m.label} style={{ marginBottom: '10px', padding: '8px 10px', background: 'rgba(8,22,30,0.6)', border: '1px solid var(--bb-teal-border)', borderLeft: `3px solid ${m.color}`, borderRadius: '2px' }}>
+                                        <div style={{ fontSize: '8px', color: 'var(--bb-text-dim)', fontWeight: 800, letterSpacing: '0.08em' }}>{m.label}</div>
+                                        <div style={{ fontSize: '18px', color: m.color, fontFamily: 'var(--font-mono)', fontWeight: 800, marginTop: '2px', transition: 'all 0.3s' }}>{m.value}</div>
+                                        <div style={{ fontSize: '8px', color: 'var(--bb-text-dim)', marginTop: '1px' }}>{m.sub}</div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
 
-                        <div className="m-chart-row" style={{ flex: 1, minHeight: 0, padding: '0 12px' }}>
-                            <div className="m-chart-box" style={{ flex: 2 }}>
-                                <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-blue)', letterSpacing: '0.1em', marginBottom: '4px', padding: '8px 8px 0' }}>
-                                    STRATEGY VS BENCHMARK (Mean Reversion v1.2)
+                        {/* Right: Chart + Log + Trade Table */}
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflowY: 'auto' }}>
+                            {/* Chart — explicit height so echarts can measure */}
+                            <div style={{ padding: '12px', flexShrink: 0 }}>
+                                <div style={{ background: 'rgba(8,22,30,0.6)', border: '1px solid var(--bb-teal-border)', borderRadius: '3px', height: '280px', padding: '8px' }}>
+                                    <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-blue)', letterSpacing: '0.1em', marginBottom: '4px' }}>
+                                        EQUITY CURVE — STRATEGY vs BENCHMARK (BASE 100)
+                                    </div>
+                                    <div ref={chartRefBT} style={{ width: '100%', height: 'calc(100% - 24px)' }} />
                                 </div>
-                                <div ref={chartRefEquity} style={{ width: '100%', height: 'calc(100% - 28px)' }} />
                             </div>
-                            <div className="m-chart-box" style={{ flex: 1 }}>
-                                <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-blue)', letterSpacing: '0.1em', marginBottom: '4px', padding: '8px 8px 0' }}>
-                                    PROFITABILITY HEATMAP (DAY × HOUR)
-                                </div>
-                                <div ref={chartRefHeat} style={{ width: '100%', height: 'calc(100% - 28px)' }} />
-                            </div>
-                        </div>
 
-                        <div className="m-analysis-box" style={{ margin: '12px', flexShrink: 0 }}>
-                            <div className="m-ab-title">EXECUTION LOG & QUERY BUILDER — Simple Back-Test</div>
-                            <div className="m-ab-text" style={{ fontSize: '11px', fontFamily: 'var(--font-mono)' }}>
-                                <span style={{ color: 'var(--bb-text-dim)' }}>[QUERY]</span> SELECT * FROM trades WHERE strategy='mean_reversion' AND pnl &gt; 0 ORDER BY entry_date<br />
-                                <span style={{ color: 'var(--bb-text-dim)' }}>[ENGINE]</span> Simulation: 1.2M iterations. NY/LDN overlap alpha identified in JPY pairs.<br />
-                                <span style={{ color: 'var(--bb-text-dim)' }}>[RESULT]</span> Historical analog: 2018 Rate Hike Cycle — 78% similarity score.<br />
-                                <span style={{ color: 'var(--bb-green)' }}>▶ Suggestion: Increase leverage on EUR/USD during LDN open (07:00-10:00 UTC).</span>
+                            {/* Execution Log */}
+                            <div style={{ padding: '0 12px 8px', flexShrink: 0 }}>
+                                <div style={{ background: 'rgba(2,8,14,0.9)', border: '1px solid var(--bb-teal-border)', borderRadius: '3px', padding: '8px 12px', maxHeight: '120px', overflowY: 'auto' }}>
+                                    <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-amber)', letterSpacing: '0.1em', marginBottom: '6px' }}>EXECUTION LOG</div>
+                                    {liveLog.length === 0 ? (
+                                        <div style={{ fontSize: '10px', color: 'var(--bb-text-dim)', fontFamily: 'var(--font-mono)' }}>Press RUN BACKTEST to begin simulation...</div>
+                                    ) : (
+                                        liveLog.map((line, i) => (
+                                            <div key={i} style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: line.includes('RESULT') || line.includes('SUGGEST') || line.includes('COMPLETE') ? 'var(--bb-green)' : 'var(--bb-text-dim)', lineHeight: 1.6 }}>
+                                                {line}
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Trade Log Table */}
+                            <div style={{ padding: '0 12px 12px', flexShrink: 0 }}>
+                                <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-amber)', letterSpacing: '0.1em', marginBottom: '6px' }}>SAMPLE TRADE LOG</div>
+                                <div style={{ background: 'rgba(8,22,30,0.6)', border: '1px solid var(--bb-teal-border)', borderRadius: '3px', overflowX: 'auto' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px' }}>
+                                        <thead>
+                                            <tr style={{ background: 'rgba(4,12,18,0.9)', borderBottom: '1px solid var(--bb-teal-border)' }}>
+                                                {['DATE', 'TICKER', 'SIDE', 'ENTRY', 'EXIT', 'PIPS', 'P&L', 'DURATION', 'RESULT'].map(h => (
+                                                    <th key={h} style={{ padding: '6px 8px', textAlign: 'left', fontSize: '8px', fontWeight: 800, color: 'var(--bb-text-dim)', letterSpacing: '0.1em', whiteSpace: 'nowrap' }}>{h}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {BACKTEST_TRADES.map((t, i) => (
+                                                <tr key={i} style={{ borderBottom: '1px solid rgba(22,51,68,0.3)' }}
+                                                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,184,224,0.04)')}
+                                                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                                                    <td style={{ padding: '5px 8px', color: 'var(--bb-text-dim)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>{t.date}</td>
+                                                    <td style={{ padding: '5px 8px', color: 'var(--bb-amber)', fontWeight: 800 }}>{t.ticker}</td>
+                                                    <td style={{ padding: '5px 8px', color: t.side === 'LONG' ? '#00ff8f' : '#ff4d4d', fontWeight: 800 }}>{t.side}</td>
+                                                    <td style={{ padding: '5px 8px', fontFamily: 'var(--font-mono)' }}>{t.entry}</td>
+                                                    <td style={{ padding: '5px 8px', fontFamily: 'var(--font-mono)' }}>{t.exit}</td>
+                                                    <td style={{ padding: '5px 8px', color: t.result === 'WIN' ? '#00ff8f' : '#ff4d4d', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{t.pips}</td>
+                                                    <td style={{ padding: '5px 8px', color: t.result === 'WIN' ? '#00ff8f' : '#ff4d4d', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>{t.pnl}</td>
+                                                    <td style={{ padding: '5px 8px', color: 'var(--bb-text-dim)', fontFamily: 'var(--font-mono)' }}>{t.duration}</td>
+                                                    <td style={{ padding: '5px 8px' }}>
+                                                        <span style={{ padding: '2px 6px', borderRadius: '2px', fontSize: '8px', fontWeight: 800, background: t.result === 'WIN' ? 'rgba(0,255,143,0.1)' : 'rgba(255,77,77,0.1)', color: t.result === 'WIN' ? '#00ff8f' : '#ff4d4d', border: `1px solid ${t.result === 'WIN' ? 'rgba(0,255,143,0.2)' : 'rgba(255,77,77,0.2)'}` }}>
+                                                            {t.result}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
-                    </>
+                    </div>
                 )}
 
                 {/* ──────────── TAB 3: Factors & Risk Premia ──────────── */}
                 {activeTab === 'riskparity' && (
                     <div style={{ display: 'flex', flex: 1, minHeight: 0, gap: '12px', padding: '12px', overflow: 'hidden' }}>
-                        {/* Factor Table */}
                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                             <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-amber)', letterSpacing: '0.1em', marginBottom: '8px' }}>
                                 RISK PREMIA FACTOR DECOMPOSITION
@@ -297,8 +513,7 @@ export default function EngineeringFullScreen() {
                                         {RISK_PREMIA.map((r, i) => (
                                             <tr key={i} style={{ borderBottom: '1px solid rgba(22,51,68,0.3)' }}
                                                 onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,184,224,0.04)')}
-                                                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                                            >
+                                                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                                                 <td style={{ padding: '7px 10px', color: 'var(--bb-text)', fontWeight: 700 }}>{r.factor}</td>
                                                 <td style={{ padding: '7px 10px', color: 'var(--bb-green)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>+{r.ret}%</td>
                                                 <td style={{ padding: '7px 10px', color: 'var(--bb-amber)', fontFamily: 'var(--font-mono)' }}>{r.vol}%</td>
@@ -313,8 +528,6 @@ export default function EngineeringFullScreen() {
                                     </tbody>
                                 </table>
                             </div>
-
-                            {/* Risk Parity explanation */}
                             <div style={{ marginTop: '10px', padding: '10px 12px', background: 'rgba(8,22,30,0.6)', border: '1px solid var(--bb-teal-border)', borderRadius: '3px', borderLeft: '3px solid var(--bb-blue)', flexShrink: 0 }}>
                                 <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-blue)', letterSpacing: '0.1em', marginBottom: '4px' }}>RISK PARITY FRAMEWORK</div>
                                 <div style={{ fontSize: '10px', color: 'var(--bb-text-dim)', lineHeight: 1.6 }}>
@@ -324,8 +537,6 @@ export default function EngineeringFullScreen() {
                                 </div>
                             </div>
                         </div>
-
-                        {/* Radar Chart */}
                         <div style={{ width: '300px', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
                             <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-amber)', letterSpacing: '0.1em', marginBottom: '8px' }}>
                                 SHARPE RATIO BY FACTOR (RADAR)

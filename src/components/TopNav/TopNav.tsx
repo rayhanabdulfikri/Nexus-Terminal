@@ -46,10 +46,24 @@ function TopNav() {
   const [activeMenu, setActiveMenu] = useState<MenuKey>(null)
   const [command, setCommand] = useState("")
   const [currentTime, setCurrentTime] = useState(new Date())
+  const [liveStats, setLiveStats] = useState({ vix: 13.42, dxy: 104.32, gold: 2038.5, us10y: 4.248 })
 
   // Update every second for smooth clocks
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  // Live-fluctuating command bar stats
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setLiveStats(prev => ({
+        vix:   parseFloat((prev.vix   + (Math.random() - 0.5) * 0.08).toFixed(2)),
+        dxy:   parseFloat((prev.dxy   + (Math.random() - 0.5) * 0.04).toFixed(2)),
+        gold:  parseFloat((prev.gold  + (Math.random() - 0.5) * 0.9).toFixed(1)),
+        us10y: parseFloat((prev.us10y + (Math.random() - 0.5) * 0.005).toFixed(3)),
+      }))
+    }, 900)
     return () => clearInterval(timer)
   }, [])
 
@@ -60,7 +74,7 @@ function TopNav() {
     setImpactFilters(prev => prev.includes(level) ? prev.filter(x => x !== level) : [...prev, level])
   }, [])
 
-  // Global Keyboard Shortcuts
+  // Global Keyboard Shortcuts — ESC closes both dropdown menus AND fullscreen views
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey) {
@@ -76,7 +90,11 @@ function TopNav() {
           case "s": e.preventDefault(); setActiveView("SENTIMENT");   setActiveMenu(null); break
         }
       }
-      if (e.key === "Escape") setActiveMenu(null)
+      if (e.key === "Escape") {
+        setActiveMenu(null)
+        // Also return from any fullscreen view back to dashboard
+        setActiveView("DASHBOARD")
+      }
     }
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
@@ -221,23 +239,23 @@ function TopNav() {
             placeholder="ENTER COMMAND OR TICKER (e.g. EURUSD, PORT, CAL, RISK, SENT)..."
             autoFocus
           />
-          {/* Quick stats in command bar */}
+          {/* Quick stats in command bar — real-time */}
           <div className="tn-cmd-stats">
             <div className="tn-cmd-stat">
               <span className="tn-cmd-stat-label">VIX</span>
-              <span className="tn-cmd-stat-val text-pos">13.42</span>
+              <span className="tn-cmd-stat-val text-pos">{liveStats.vix.toFixed(2)}</span>
             </div>
             <div className="tn-cmd-stat">
               <span className="tn-cmd-stat-label">DXY</span>
-              <span className="tn-cmd-stat-val text-neg">104.32</span>
+              <span className="tn-cmd-stat-val text-neg">{liveStats.dxy.toFixed(2)}</span>
             </div>
             <div className="tn-cmd-stat">
               <span className="tn-cmd-stat-label">GOLD</span>
-              <span className="tn-cmd-stat-val text-pos">2038</span>
+              <span className="tn-cmd-stat-val text-pos">{liveStats.gold.toFixed(1)}</span>
             </div>
             <div className="tn-cmd-stat">
               <span className="tn-cmd-stat-label">US10Y</span>
-              <span className="tn-cmd-stat-val text-neg">4.248%</span>
+              <span className="tn-cmd-stat-val text-neg">{liveStats.us10y.toFixed(3)}%</span>
             </div>
           </div>
           <div className="tn-cmd-hint">

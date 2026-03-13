@@ -173,6 +173,14 @@ const CATEGORIES = ["All", "Central Bank", "Employment", "Inflation", "GDP", "PM
 const REGIONS = ["All", "US", "EU", "JP", "CN", "GB", "GLOBAL"]
 const IMPACTS: Impact[] = ["HIGH", "MED", "LOW"]
 
+const BREAKING_HEADLINES = [
+    "FED'S POWELL: INFLATION PROGRESS HAS STALLED, HIGHER FOR LONGER REMAINS BASE CASE",
+    "U.S. RETAIL SALES (MOM): 0.7% VS 0.4% FORECAST - STRONGER THAN EXPECTED",
+    "CHINA Q1 GDP GREW 5.3% Y/Y, BEATING 4.6% ESTIMATE",
+    "ISRAEL WAR CABINET CONCLUDES MEETING ON IRAN RESPONSE",
+    "UK WAGE GROWTH EXCLUDING BONUSES COOLED TO 6.0% IN FEB"
+];
+
 // ─── Countdown hook ───────────────────────────────────────
 function useCountdowns(events: any[]) {
   const [, setTick] = useState(0)
@@ -211,6 +219,40 @@ export default function NewsFeed({ category }: { category?: string; impact?: str
   const [bookmarks, setBookmarks] = useState<number[]>([])
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [showBookmarksOnly, setShowBookmarksOnly] = useState(false)
+  const [liveNews, setLiveNews] = useState<NewsItem[]>(STATIC_NEWS)
+  const [tickerIndex, setTickerIndex] = useState(0)
+
+  // Live News Simulation
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (Math.random() > 0.8) {
+        const headline = BREAKING_HEADLINES[Math.floor(Math.random() * BREAKING_HEADLINES.length)];
+        const newItem: NewsItem = {
+          id: Date.now(),
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
+          title: headline,
+          source: "Terminal",
+          region: "GLOBAL",
+          category: "Geopolitics",
+          impact: Math.random() > 0.7 ? "HIGH" : "MED",
+          impactScore: (Math.random() * 5 + 4),
+          sentiment: Math.random() > 0.5 ? "Bullish" : "Bearish",
+          sentimentAssets: [],
+          reaction: [],
+          tags: ["Breaking", "Realtime"],
+          breaking: true,
+          summary: "Flash headline detected on global wires. Situation evolving rapidly."
+        };
+        setLiveNews(prev => [newItem, ...prev.slice(0, 25)]);
+      }
+    }, 12000);
+
+    const tickerTimer = setInterval(() => {
+      setTickerIndex(prev => (prev + 1) % BREAKING_HEADLINES.length);
+    }, 15000);
+
+    return () => { clearInterval(timer); clearInterval(tickerTimer); };
+  }, []);
 
   const toggleImpact = (lvl: string) =>
     setFilterImpact(prev => prev.includes(lvl) ? prev.filter(x => x !== lvl) : [...prev, lvl])
@@ -220,7 +262,7 @@ export default function NewsFeed({ category }: { category?: string; impact?: str
 
   // Filter news
   const news = useMemo(() => {
-    return STATIC_NEWS.filter(n => {
+    return liveNews.filter(n => {
       if (showBookmarksOnly && !bookmarks.includes(n.id)) return false
       if (filterCat !== "All" && n.category !== filterCat) return false
       if (filterRegion !== "All" && n.region !== filterRegion) return false
@@ -229,7 +271,7 @@ export default function NewsFeed({ category }: { category?: string; impact?: str
         !n.tags.some(t => t.toLowerCase().includes(search.toLowerCase()))) return false
       return true
     })
-  }, [filterCat, filterRegion, filterImpact, search, showBookmarksOnly, bookmarks])
+  }, [filterCat, filterRegion, filterImpact, search, showBookmarksOnly, bookmarks, liveNews])
 
   // Calendar events
   const calendarItems = useMemo(() => {
@@ -288,6 +330,14 @@ export default function NewsFeed({ category }: { category?: string; impact?: str
 
   return (
     <div className="nf-root animate-fade">
+      {/* Breaking News Ticker */}
+      <div className="news-ticker glass">
+          <div className="ticker-label">BREAKING</div>
+          <div className="ticker-content">
+              <span className="ticker-text">{BREAKING_HEADLINES[tickerIndex]}</span>
+          </div>
+          <div className="ticker-time">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+      </div>
 
       {/* ── Search + Filter Row ── */}
       <div className="nf-filter-bar glass">

@@ -1,5 +1,5 @@
 import "./MarketTable.css"
-import { useState, useEffect, useCallback, memo } from "react"
+import { useState, useEffect, useCallback, memo, useRef } from "react"
 import { useTerminal } from "../../context/TerminalContext"
 
 type MarketTableProps = {
@@ -105,36 +105,38 @@ function MarketTable({ group = "All Assets" }: MarketTableProps) {
   const { setActiveTicker } = useTerminal()
   const [flashSet, setFlashSet] = useState<Set<string>>(new Set())
   const [liveData, setLiveData] = useState<AssetRow[]>(ALL_ASSETS)
+  const liveRef = useRef(ALL_ASSETS)
 
-  // Simulate live price ticks
+  // Simulate live price ticks — ALL assets update every tick, no stale closure
   useEffect(() => {
     const tick = setInterval(() => {
-      const idx = Math.floor(Math.random() * liveData.length)
-      const asset = liveData[idx]
-      const delta = (Math.random() - 0.48) * asset.val * 0.001
-      const newVal = asset.val + delta
-
-      setFlashSet(prev => new Set(prev).add(asset.name))
-      setTimeout(() => setFlashSet(prev => {
-        const next = new Set(prev)
-        next.delete(asset.name)
-        return next
-      }), 600)
-
-      setLiveData(prev => prev.map((a, i) => {
-        if (i !== idx) return a
-        const spark = [...a.sparkline.slice(1), newVal]
+      const nextFlash = new Set<string>()
+      const updated = liveRef.current.map((asset: AssetRow) => {
+        // Only move ~60% of assets per tick for natural feel
+        if (Math.random() > 0.6) return asset
+        const volatility = asset.val * 0.0008
+        const delta = (Math.random() - 0.48) * volatility
+        const newVal = Math.max(0.0001, asset.val + delta)
+        const open = asset.val - asset.chg
+        nextFlash.add(asset.name)
         return {
-          ...a,
+          ...asset,
           val: newVal,
-          chg: newVal - (a.val - a.chg + a.chg) + delta,
-          sparkline: spark,
-          dir: delta > 0 ? "▲" : delta < 0 ? "▼" : "─",
+          chg: parseFloat((newVal - open).toFixed(6)),
+          chgPct: parseFloat(((newVal - open) / open * 100).toFixed(3)),
+          dir: (delta > 0 ? "▲" : delta < 0 ? "▼" : "─") as "▲" | "▼" | "─",
+          sparkline: [...asset.sparkline.slice(1), newVal],
         }
-      }))
-    }, 2800)
+      })
+      liveRef.current = updated
+      setLiveData(updated)
+      setFlashSet(nextFlash)
+      // Clear flash after 500ms
+      setTimeout(() => setFlashSet(new Set()), 500)
+    }, 1500)
     return () => clearInterval(tick)
-  }, [liveData])
+  }, []) // ← no dependency on liveData — uses ref instead
+
 
   const filteredData = useCallback(() => {
     if (group === "All Assets") return liveData

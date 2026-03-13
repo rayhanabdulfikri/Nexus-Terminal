@@ -68,6 +68,14 @@ export default function AssetsFullScreen() {
     const chartRefScatter = useRef<HTMLDivElement>(null);
     const chartRefCorr    = useRef<HTMLDivElement>(null);
 
+    useEffect(() => {
+        const handleEsc = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setActiveView("DASHBOARD");
+        };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, [setActiveView]);
+
     const filteredData = filter === "ALL" ? ASSET_DATA : ASSET_DATA.filter(d => d.class === filter);
 
     // ── Performance charts ──

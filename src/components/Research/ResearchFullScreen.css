@@ -19,43 +19,46 @@
 }
 
 .r-sidebar {
-    width: 250px;
+    width: 220px;
     background: #091a1f;
     border-right: 1px solid var(--bb-teal-border);
     display: flex;
     flex-direction: column;
+    flex-shrink: 0;
 }
 
 .r-feed {
-    width: 400px;
+    width: 360px;
     background: #02090b;
     border-right: 1px solid var(--bb-teal-border);
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+    flex-shrink: 0;
 }
 
 .r-viewer {
     flex: 1;
-    background: #06171b;
+    background: #0a1e24;
     display: flex;
     flex-direction: column;
-    padding: 32px;
+    padding: 20px 24px;
     overflow-y: auto;
 }
 
 .r-side-title {
-    padding: 20px 20px 10px;
+    padding: 16px 16px 10px;
     color: var(--bb-text-dim);
-    font-size: 11px;
-    font-weight: bold;
-    letter-spacing: 0.1em;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    border-bottom: 1px solid var(--bb-teal-border);
 }
 
 .r-side-item {
-    padding: 12px 20px;
+    padding: 11px 16px;
     color: var(--bb-text);
-    font-size: 13px;
+    font-size: 12px;
     cursor: pointer;
     border-left: 3px solid transparent;
     transition: all 0.2s;
@@ -73,16 +76,17 @@
 }
 
 .r-feed-header {
-    padding: 16px;
+    padding: 14px 16px;
     background: #0b2730;
     border-bottom: 2px solid var(--bb-teal-border);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .r-feed-item {
-    padding: 16px;
+    padding: 14px 16px;
     border-bottom: 1px solid rgba(13, 31, 38, 0.6);
     cursor: pointer;
     transition: background 0.2s;
@@ -93,24 +97,25 @@
 }
 
 .r-feed-item.active {
-    background: rgba(0, 180, 220, 0.1);
+    background: rgba(0, 180, 220, 0.08);
     border-left: 3px solid var(--bb-amber);
+    padding-left: 13px;
 }
 
 .r-meta {
     display: flex;
     justify-content: space-between;
-    font-size: 10px;
+    font-size: 9px;
     color: var(--bb-text-dim);
-    margin-bottom: 6px;
+    margin-bottom: 5px;
 }
 
 .r-title {
     color: var(--bb-amber);
-    font-size: 13px;
+    font-size: 12px;
     font-weight: bold;
     line-height: 1.4;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 
 .r-desk {
@@ -118,82 +123,111 @@
     background: var(--bb-teal-dark);
     color: #cbd5e1;
     padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 9px;
-    font-weight: bold;
+    border-radius: 3px;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
 }
 
-/* PDF Viewer Mock styling */
+/* ─── PDF Viewer ─── */
 .r-doc {
-    background: white;
-    color: #1a1a1a;
+    background: #f8f6f0; /* warm off-white, feels like real research paper */
+    color: #1a1a2e;
     border-radius: 4px;
-    padding: 48px;
-    max-width: 800px;
+    padding: 40px 48px;
+    max-width: 760px;
     margin: 0 auto;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    min-height: 800px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,0,0,0.2);
+    min-height: 600px;
+    position: relative;
 }
 
 .r-doc-head {
-    border-bottom: 2px solid #e2e8f0;
-    padding-bottom: 24px;
-    margin-bottom: 32px;
+    border-bottom: 2px solid #c8c0b0;
+    padding-bottom: 20px;
+    margin-bottom: 24px;
 }
 
 .r-doc-bank {
-    color: #b91c1c; /* Deep red for institutional logo mock */
-    font-size: 24px;
+    color: #b91c1c;
+    font-size: 20px;
     font-weight: 900;
-    font-family: 'Times New Roman', serif;
+    font-family: 'Times New Roman', Georgia, serif;
     letter-spacing: -0.5px;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
 }
 
 .r-doc-title {
-    font-size: 28px;
-    font-weight: bold;
-    line-height: 1.2;
-    margin-bottom: 16px;
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1.25;
+    margin-bottom: 14px;
     color: #0f172a;
+    font-family: 'Georgia', serif;
 }
 
 .r-doc-info {
-    font-size: 12px;
+    font-size: 11px;
     color: #64748b;
     display: flex;
-    gap: 24px;
-    font-family: 'Inter', sans-serif;
+    gap: 20px;
+    font-family: 'Inter', 'Arial', sans-serif;
+    flex-wrap: wrap;
+}
+
+.r-doc-abstract {
+    font-size: 12px;
+    line-height: 1.7;
+    color: #475569;
+    font-style: italic;
+    padding: 14px 16px;
+    background: #f0ece4;
+    border-left: 3px solid #b91c1c;
+    border-radius: 2px;
+    margin-bottom: 22px;
+    font-family: 'Georgia', serif;
 }
 
 .r-doc-body {
-    font-size: 15px;
-    line-height: 1.8;
+    font-size: 13px;
+    line-height: 1.85;
     color: #334155;
     font-family: 'Georgia', serif;
 }
 
 .r-doc-body p {
-    margin-bottom: 24px;
+    margin-bottom: 18px;
+    text-align: justify;
 }
 
 .r-doc-body h3 {
     color: #0f172a;
-    margin-top: 32px;
-    margin-bottom: 16px;
-    font-family: 'Inter', sans-serif;
-    font-size: 18px;
+    margin-top: 26px;
+    margin-bottom: 12px;
+    font-family: 'Inter', 'Arial', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 6px;
 }
 
 .r-doc-bullet {
     margin-bottom: 8px;
     display: flex;
-    gap: 12px;
+    gap: 10px;
+    font-size: 13px;
+    color: #1e3a5f;
+    padding: 6px 10px;
+    background: #edf2f7;
+    border-radius: 2px;
+    line-height: 1.5;
 }
 
 .r-doc-bullet::before {
     content: '■';
     color: #b91c1c;
-    font-size: 10px;
-    margin-top: 6px;
+    font-size: 9px;
+    margin-top: 4px;
+    flex-shrink: 0;
 }
