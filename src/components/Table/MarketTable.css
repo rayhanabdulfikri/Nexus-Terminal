@@ -1,0 +1,212 @@
+/* ═══════════════════════════════════════════
+   MARKET TABLE — Premium v2.0
+   Optimized: contain:strict, GPU sparklines
+═══════════════════════════════════════════ */
+
+.mt-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: rgba(2, 8, 14, 0.6);
+  overflow: hidden;
+  contain: strict;
+}
+
+/* ── Header ── */
+.mt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--bb-teal-border);
+  flex-shrink: 0;
+  background: rgba(8, 22, 30, 0.8);
+}
+
+/* .mt-header-left — no additional styles needed */
+
+.mt-header-title {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--bb-blue);
+  letter-spacing: 0.1em;
+}
+
+.mt-header-subtitle {
+  font-size: 8px;
+  color: var(--bb-text-very-dim);
+  letter-spacing: 0.12em;
+  margin-top: 1px;
+}
+
+.mt-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mt-live-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 8px;
+  font-weight: 800;
+  color: var(--bb-green);
+  letter-spacing: 0.1em;
+  padding: 2px 7px;
+  border: 1px solid rgba(0, 230, 118, 0.2);
+  border-radius: 2px;
+  background: rgba(0, 230, 118, 0.06);
+}
+
+/* ── Table Header Row ── */
+.mt-table-header {
+  display: flex;
+  align-items: center;
+  padding: 5px 12px 5px 20px;
+  background: rgba(8, 22, 30, 0.6);
+  border-bottom: 1px solid var(--bb-teal-border);
+  font-size: 8px;
+  font-weight: 800;
+  color: var(--bb-text-very-dim);
+  letter-spacing: 0.1em;
+  flex-shrink: 0;
+}
+
+/* ── Scrollable body ── */
+.mt-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+/* ── Section header ── */
+.mt-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 4px;
+  background: rgba(5, 15, 22, 0.9);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.mt-section-title {
+  font-size: 8px;
+  font-weight: 800;
+  color: var(--bb-amber);
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.mt-section-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--bb-amber-dim), transparent);
+}
+
+/* ── Data Row ── */
+.mt-row {
+  display: flex;
+  align-items: center;
+  padding: 5px 12px 5px 0;
+  cursor: pointer;
+  transition: background 0.12s ease;
+  position: relative;
+  border-bottom: 1px solid rgba(22, 51, 68, 0.25);
+  contain: layout;
+}
+
+.mt-row:hover {
+  background: rgba(0, 184, 224, 0.04);
+}
+
+.mt-row:hover .mt-row-bar { opacity: 1; }
+
+/* Left bar accent */
+.mt-row-bar {
+  width: 3px;
+  height: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0.4;
+  transition: opacity 0.15s;
+}
+
+.mt-row-bar.pos { background: var(--bb-green); }
+.mt-row-bar.neg { background: var(--bb-red); }
+.mt-row-bar.flat { background: var(--bb-text-dim); }
+
+.mt-row-name {
+  flex: 1.2;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--bb-text);
+  letter-spacing: 0.02em;
+  padding-left: 8px;
+}
+
+.mt-row-price {
+  flex: 1;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  letter-spacing: 0.01em;
+  transition: color 0.2s;
+}
+
+.mt-row-chg {
+  flex: 1;
+  text-align: right;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.mt-row-hl {
+  flex: 1.2;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  font-family: var(--font-mono);
+}
+
+.mt-row-spark {
+  flex: 0.8;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.mt-row-vol {
+  flex: 0.6;
+  text-align: right;
+  font-size: 9px;
+  color: var(--bb-text-very-dim);
+  font-family: var(--font-mono);
+}
+
+/* ── Flash animations for price ticks ── */
+@keyframes flashGreen {
+  0%   { background: rgba(0, 230, 118, 0.18); }
+  100% { background: transparent; }
+}
+
+@keyframes flashRed {
+  0%   { background: rgba(255, 61, 87, 0.18); }
+  100% { background: transparent; }
+}
+
+.flash-green {
+  animation: flashGreen 0.6s ease-out forwards;
+}
+
+.flash-red {
+  animation: flashRed 0.6s ease-out forwards;
+}

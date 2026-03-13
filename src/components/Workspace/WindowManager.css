@@ -1,0 +1,254 @@
+/* ═══════════════════════════════════════════
+   WINDOW MANAGER — Premium Grid v2.0
+   Optimized: will-change, contain, GPU layers
+═══════════════════════════════════════════ */
+
+/* ── Root Container ── */
+.wm-root {
+    position: relative;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
+    gap: 3px;
+    padding: 3px;
+    background: var(--bb-navy-deep);
+}
+
+/* ── Floating Window (for WindoManager overlay mode) ── */
+.wm-window {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--bb-teal-border);
+    border-radius: 3px;
+    box-shadow: var(--panel-shadow);
+    min-width: 280px;
+    min-height: 180px;
+    contain: layout paint style;
+    will-change: transform;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    overflow: hidden;
+    animation: fadeIn 0.25s ease-out;
+}
+
+.wm-window:hover {
+    border-color: rgba(0, 184, 224, 0.35);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(0, 184, 224, 0.08);
+}
+
+/* ── Title Bar ── */
+.wm-titlebar {
+    height: 26px;
+    background: rgba(8, 22, 30, 0.98);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10px;
+    cursor: move;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--bb-teal-border);
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.wm-title {
+    font-size: 9px;
+    color: var(--bb-blue);
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.wm-title-badge {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--bb-blue);
+    animation: pulse-subtle 2s infinite;
+}
+
+/* ── Window Controls (macOS style) ── */
+.wm-controls {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.wm-btn {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    border: none;
+    font-size: 0;
+    cursor: pointer;
+    transition: transform 0.15s ease, filter 0.15s ease;
+    padding: 0;
+    outline: none;
+}
+
+.wm-min { background: #ffbd2e; }
+.wm-max { background: #28c940; }
+
+.wm-btn:hover {
+    transform: scale(1.15);
+    filter: brightness(1.15);
+}
+
+/* ── Panel Content Area ── */
+.wm-content {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    background: rgba(2, 8, 14, 0.5);
+    contain: strict;
+}
+
+/* ── Resize Handle ── */
+.wm-resize-handle {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 14px;
+    height: 14px;
+    cursor: se-resize;
+    z-index: 20;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.wm-resize-handle::before {
+    content: '';
+    position: absolute;
+    right: 2px;
+    bottom: 2px;
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid var(--bb-teal-border);
+    border-bottom: 2px solid var(--bb-teal-border);
+    border-radius: 1px;
+}
+
+.wm-window:hover .wm-resize-handle { opacity: 1; }
+
+/* ═══════════════════════════════════════════
+   TASKBAR — Professional Dock Style
+═══════════════════════════════════════════ */
+.wm-taskbar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: rgba(1, 6, 10, 0.97);
+    border-top: 1px solid var(--bb-teal-border);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    z-index: 9999;
+    backdrop-filter: blur(8px);
+}
+
+.wm-taskbar-label {
+    font-size: 8px;
+    color: var(--bb-text-very-dim);
+    letter-spacing: 0.14em;
+    font-weight: 800;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.wm-taskbtn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border: 1px solid var(--bb-teal-border);
+    border-radius: 4px;
+    background: rgba(10, 30, 38, 0.8);
+    color: var(--bb-text-dim);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    height: 28px;
+    white-space: nowrap;
+}
+
+.wm-taskbtn:hover {
+    background: rgba(0, 184, 224, 0.08);
+    border-color: rgba(0, 184, 224, 0.3);
+    color: var(--bb-text-bright);
+    transform: translateY(-1px);
+}
+
+.wm-taskbtn-min {
+    opacity: 0.5;
+    border-style: dashed;
+}
+
+.wm-taskbtn-max {
+    border-color: var(--bb-blue);
+    background: var(--bb-blue-dim);
+    color: var(--bb-blue);
+}
+
+.wm-taskbtn-icon {
+    font-size: 9px;
+    opacity: 0.7;
+}
+
+/* ── Taskbar separator ── */
+.wm-taskbar-sep {
+    width: 1px;
+    height: 16px;
+    background: var(--bb-teal-border);
+    margin: 0 4px;
+}
+
+/* ── Taskbar layout label badge ── */
+.wm-layout-info {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 8px;
+    color: var(--bb-text-very-dim);
+    letter-spacing: 0.1em;
+}
+
+.wm-layout-btn {
+    padding: 2px 6px;
+    border: 1px solid var(--bb-teal-border);
+    border-radius: 2px;
+    background: transparent;
+    color: var(--bb-text-dim);
+    font-size: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    letter-spacing: 0.06em;
+}
+
+.wm-layout-btn:hover {
+    border-color: var(--bb-blue);
+    color: var(--bb-blue);
+    background: var(--bb-blue-dim);
+}
+
+.wm-layout-btn.active-layout {
+    border-color: var(--bb-amber);
+    color: var(--bb-amber);
+    background: var(--bb-amber-dim);
+}

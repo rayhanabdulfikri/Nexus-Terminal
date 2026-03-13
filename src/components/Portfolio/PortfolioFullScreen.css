@@ -1,0 +1,123 @@
+.port-fs-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+    background-color: #051418;
+    color: var(--bb-text);
+    padding: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+    font-family: 'Inter', -apple-system, sans-serif;
+}
+
+.port-fs-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+    padding: 24px;
+    gap: 24px;
+}
+
+.p-metrics-row {
+    display: flex;
+    gap: 16px;
+}
+
+.p-metric-card {
+    flex: 1;
+    background: #091a1f;
+    border: 1px solid var(--bb-teal-border);
+    border-top: 3px solid var(--bb-amber);
+    padding: 16px;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.p-mc-title {
+    color: var(--bb-text-dim);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+.p-mc-val {
+    color: white;
+    font-size: 24px;
+    font-weight: 700;
+    font-family: 'Space Mono', monospace;
+}
+
+.p-mc-sub {
+    font-size: 12px;
+}
+
+.p-charts-row {
+    display: flex;
+    gap: 24px;
+    height: 350px;
+}
+
+.p-chart-box {
+    background: #06171b;
+    border: 1px solid var(--bb-teal-border);
+    border-radius: 4px;
+    padding: 16px;
+    position: relative;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+.p-table-container {
+    flex: 1;
+    background: #091a1f;
+    border: 1px solid var(--bb-teal-border);
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.p-table-body {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.p-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.p-table th {
+    position: sticky;
+    top: 0;
+    background: rgba(9, 26, 31, 0.95);
+    padding: 10px 20px;
+    text-align: right;
+    color: var(--bb-text-dim);
+    font-weight: normal;
+    font-size: 11px;
+    border-bottom: 1px solid var(--bb-teal-border);
+}
+
+.p-table th:first-child { text-align: left; }
+.p-table td {
+    padding: 12px 20px;
+    text-align: right;
+    border-bottom: 1px solid rgba(10, 28, 33, 0.8);
+    font-family: 'Space Mono', monospace;
+}
+
+.p-table td.p-name {
+    text-align: left;
+    color: var(--bb-amber);
+    font-weight: 600;
+}
+
+.p-table tr:hover {
+    background: rgba(10, 28, 33, 0.5);
+    cursor: pointer;
+}

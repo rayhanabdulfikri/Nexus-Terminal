@@ -1,0 +1,156 @@
+/* ═══════════════════════════════════════
+   DESKTOP — Full 2x2 resizable grid
+═══════════════════════════════════════ */
+.rw-desktop {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    user-select: none;
+}
+
+.rw-row {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.rw-cell {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* ── Vertical divider (left-right resize) ── */
+.rw-divider-v {
+    width: 3px;
+    background: var(--bb-teal-border);
+    cursor: col-resize;
+    flex-shrink: 0;
+    transition: background 0.15s, width 0.1s;
+    position: relative;
+    z-index: 10;
+}
+
+.rw-divider-v:hover,
+.rw-divider-v:active {
+    background: var(--bb-amber);
+    width: 4px;
+    box-shadow: 0 0 8px var(--bb-amber-glow);
+}
+
+/* ── Horizontal divider (top-bottom resize) ── */
+.rw-divider-h {
+    height: 3px;
+    background: var(--bb-teal-border);
+    cursor: row-resize;
+    flex-shrink: 0;
+    width: 100%;
+    transition: background 0.15s, height 0.1s;
+    position: relative;
+    z-index: 10;
+}
+
+.rw-divider-h:hover,
+.rw-divider-h:active {
+    background: var(--bb-amber);
+    height: 4px;
+    box-shadow: 0 0 8px var(--bb-amber-glow);
+}
+
+/* ═══════════════════════════════════════
+   TABLET (iPad 768-1099px) — 2 col, vertical drag
+═══════════════════════════════════════ */
+.rw-tablet {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    user-select: none;
+}
+
+.rw-tablet-row {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.rw-tablet-cell {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* ═══════════════════════════════════════
+   MOBILE (<768px) — Single panel + tab bar
+═══════════════════════════════════════ */
+.rw-mobile {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.rw-mobile-tabs {
+    display: flex;
+    flex-direction: row;
+    background: var(--bb-teal-dark);
+    border-bottom: 1px solid var(--bb-teal-border);
+    overflow-x: auto;
+    flex-shrink: 0;
+}
+
+.rw-mtab {
+    flex: 1;
+    min-width: 70px;
+    padding: 7px 4px;
+    background: transparent;
+    border: none;
+    color: var(--bb-text-dim);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    font-family: 'Bloomberg Font', "JetBrains Mono", monospace;
+    cursor: pointer;
+    border-right: 1px solid var(--bb-teal-border);
+    transition: var(--transition-fast);
+    white-space: nowrap;
+}
+
+.rw-mtab:last-child { border-right: none; }
+
+.rw-mtab:hover {
+    color: var(--bb-text-bright);
+    background: var(--bb-teal-header);
+}
+
+.rw-mtab-active {
+    color: var(--bb-amber) !important;
+    background: rgba(255, 170, 0, 0.06) !important;
+    border-bottom: 2px solid var(--bb-amber);
+}
+
+.rw-mobile-panel {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* ═══════════════════════════════════════
+   Responsive overrides
+═══════════════════════════════════════ */
+@media (max-width: 767px) {
+    .workspace {
+        display: none !important;
+    }
+}
