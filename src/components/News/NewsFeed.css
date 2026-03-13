@@ -325,33 +325,6 @@
     border-radius: 4px;
 }
 
-.nf-calendar {
-    padding: 16px;
-    background: rgba(0, 0, 0, 0.2);
-    border-top: 2px solid var(--bb-teal-border);
-}
-
-.nf-cal-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 10px;
-}
-
-.nf-cal-table th {
-    text-align: left;
-    color: var(--bb-text-dim);
-    padding: 8px;
-    border-bottom: 1px solid var(--bb-teal-border);
-}
-
-.nf-cal-table td {
-    padding: 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-}
-
-.cal-row-high {
-    background: rgba(255, 77, 77, 0.03);
-}
 /* Breaking News Ticker */
 .news-ticker {
     display: flex;

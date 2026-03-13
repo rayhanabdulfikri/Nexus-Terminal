@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from "react"
-import calendarData from "../../data/major_currencies_calendar.json"
 import "./NewsFeed.css"
 
 // ─── Types ────────────────────────────────────────────────
@@ -181,36 +180,6 @@ const BREAKING_HEADLINES = [
     "UK WAGE GROWTH EXCLUDING BONUSES COOLED TO 6.0% IN FEB"
 ];
 
-// ─── Countdown hook ───────────────────────────────────────
-function useCountdowns(events: any[]) {
-  const [, setTick] = useState(0)
-  useEffect(() => {
-    const t = setInterval(() => setTick(n => n + 1), 30000)
-    return () => clearInterval(t)
-  }, [])
-  return events
-}
-
-// ─── Helpers ─────────────────────────────────────────────
-function getCountdown(dateStr: string) {
-  const d = new Date(dateStr)
-  const now = new Date()
-  const diff = d.getTime() - now.getTime()
-  if (diff < 0) return "✓ Released"
-  const mins = Math.floor(diff / 60000)
-  if (mins < 60) return `▸ ${mins}m`
-  if (mins < 1440) return `▸ ${Math.floor(mins / 60)}h${mins % 60 ? ` ${mins % 60}m` : ""}`
-  return `▸ ${Math.floor(mins / 1440)}d`
-}
-
-function calcSurprise(actual: string, forecast: string) {
-  const a = parseFloat(actual)
-  const f = parseFloat(forecast)
-  if (isNaN(a) || isNaN(f) || forecast === "" || actual === "") return null
-  const diff = a - f
-  return { diff: diff.toFixed(2), dir: diff > 0 ? "pos" : diff < 0 ? "neg" : "neu" }
-}
-
 export default function NewsFeed({ category }: { category?: string; impact?: string }) {
   const [search, setSearch] = useState("")
   const [filterCat, setFilterCat] = useState(category ?? "All")
@@ -272,42 +241,6 @@ export default function NewsFeed({ category }: { category?: string; impact?: str
       return true
     })
   }, [filterCat, filterRegion, filterImpact, search, showBookmarksOnly, bookmarks, liveNews])
-
-  // Calendar events
-  const calendarItems = useMemo(() => {
-    try {
-      if (!calendarData?.events) return []
-      const start = new Date(); start.setHours(0, 0, 0, 0)
-      const end = new Date(); end.setHours(23, 59, 59, 999)
-      const today = calendarData.events.filter((e: any) => {
-        const t = new Date(e.date_local)
-        return t >= start && t <= end && (e.eco_level === "HIGH" || e.eco_level === "MED")
-      })
-      let items = today.length >= 5 ? today.slice(0, 5) : [
-        ...today,
-        ...calendarData.events.filter((e: any) => {
-          const t = new Date(e.date_local)
-          return t > end && (e.eco_level === "HIGH" || e.eco_level === "MED")
-        }).slice(0, 5 - today.length)
-      ]
-      return items.map((e: any) => {
-        const d = new Date(e.date_local)
-        return {
-          time: d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false }),
-          currency: e.currency,
-          event: e.title,
-          level: e.eco_level,
-          actual: e.actual || "",
-          forecast: e.forecast || "",
-          prev: e.previous || "",
-          countdown: getCountdown(e.date_local),
-          dateStr: e.date_local,
-        }
-      })
-    } catch { return [] }
-  }, [])
-
-  useCountdowns(calendarItems) // force re-render for countdowns
 
   const sentColor = (s: Sentiment) =>
     s === "Bullish" ? "#00ff8f" : s === "Bearish" ? "#ff4d4d" : s === "Mixed" ? "#ff9f1c" : "#9db4bd"
@@ -477,73 +410,6 @@ export default function NewsFeed({ category }: { category?: string; impact?: str
             })}
         </div>
       </div>
-
-      {/* ── Divider ── */}
-      <div className="nf-divider" />
-
-      {/* ── Economic Calendar ── */}
-      <div className="nf-calendar">
-        <div className="nf-section-label">TODAY'S EVENTS — HIGH &amp; MED IMPACT</div>
-
-        {calendarItems.length === 0 && (
-          <div className="nf-empty">No events for today.</div>
-        )}
-
-        <table className="nf-cal-table">
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>CCY</th>
-              <th style={{ textAlign: "left" }}>Event</th>
-              <th>Imp</th>
-              <th>Actual</th>
-              <th>Fcst</th>
-              <th>Prev</th>
-              <th>Δ Surprise</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {calendarItems.map((item: any, i: number) => {
-              const surprise = calcSurprise(item.actual, item.forecast)
-              const isReleased = item.countdown === "✓ Released"
-              return (
-                <tr key={i} className={item.level === "HIGH" ? "cal-row-high" : ""}>
-                  <td className="cal-time">{item.time}</td>
-                  <td style={{ color: "#ff9f1c", fontWeight: "bold" }}>{item.currency}</td>
-                  <td className="cal-event-cell">
-                    {item.event.length > 32 ? item.event.slice(0, 32) + "…" : item.event}
-                  </td>
-                  <td style={{ color: impactColor(item.level as Impact), fontWeight: "bold", textAlign: "center" }}>
-                    {item.level}
-                  </td>
-                  <td style={{ color: item.actual ? "#00ff8f" : "#5c8397", textAlign: "right" }}>
-                    {item.actual || "—"}
-                  </td>
-                  <td style={{ textAlign: "right" }}>{item.forecast || "—"}</td>
-                  <td style={{ color: "#5c8397", textAlign: "right" }}>{item.prev || "—"}</td>
-                  <td style={{ textAlign: "right" }}>
-                    {surprise ? (
-                      <span style={{ color: surprise.dir === "pos" ? "#00ff8f" : surprise.dir === "neg" ? "#ff4d4d" : "#9db4bd", fontWeight: "bold" }}>
-                        {surprise.dir === "pos" ? "▲" : "▼"} {Math.abs(Number(surprise.diff))}
-                      </span>
-                    ) : <span style={{ color: "#5c8397" }}>—</span>}
-                  </td>
-                  <td style={{
-                    textAlign: "right",
-                    color: isReleased ? "#00ff8f" : "#ff9f1c",
-                    fontWeight: "bold",
-                    fontSize: "9px",
-                  }}>
-                    {item.countdown}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-
     </div>
   )
 }
