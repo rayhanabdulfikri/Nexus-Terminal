@@ -61,7 +61,7 @@ export default function EngineeringFullScreen() {
     const chartRefHeat   = useRef<HTMLDivElement>(null);
     const chartRefRP     = useRef<HTMLDivElement>(null);
 
-    const strat = STRATEGIES.find(s => s.id === activeStrategy) || STRATEGIES[0];
+
 
     // ── Equity curve + heatmap charts ──
     useEffect(() => {

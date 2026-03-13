@@ -9,7 +9,6 @@ type MenuKey = "REGIME" | "ASSETS" | "TRADE" | "RISK" | "BACKTEST" | "CALENDAR" 
 // ── Session open/closed helpers ──
 function getSessionStatus(): { ny: boolean; lon: boolean; tok: boolean } {
   const now = new Date()
-  const utcH = now.getUTCHours()
   const utcMin = now.getUTCHours() * 60 + now.getUTCMinutes()
   return {
     ny:  utcMin >= 780 && utcMin < 1320,

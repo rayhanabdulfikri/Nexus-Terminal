@@ -28,7 +28,11 @@ const cotTableData: COTData[] = [
     { instrument: 'MXN', ccy: 'Mexican Peso', oi: 142000, lev: { net: 82400, chg: 5200 }, am: { net: -21400, chg: -400 }, dlr: { net: -61000 }, netPct: 58.0, zScore: 2.1, pct52w: 94 },
 ];
 
-const Sentiment = () => {
+interface SentimentProps {
+    defaultView?: string;
+}
+
+const Sentiment = ({ defaultView = 'COT' }: SentimentProps) => {
     const { setActiveTicker } = useTerminal();
     const [mainTab, setMainTab] = useState<MainTab>('COT');
     const [actionTab, setActionTab] = useState<ActionTab>('OVERVIEW');
@@ -48,6 +52,14 @@ const Sentiment = () => {
             { pair: 'XAU/USD', long_pct: 82, short_pct: 18, net_vol: 22401 },
         ]
     };
+
+    useEffect(() => {
+        if (defaultView === 'COT' || defaultView === 'RETAIL') {
+            setMainTab(defaultView as MainTab);
+        } else if (defaultView === 'EXPLORER') {
+            setActionTab('EXPLORER');
+        }
+    }, [defaultView]);
 
     useEffect(() => {
         if (actionTab === 'EXPLORER' && chartRef.current) {
