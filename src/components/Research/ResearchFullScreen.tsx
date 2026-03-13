@@ -111,7 +111,6 @@ export default function ResearchFullScreen() {
     const [selectedCat, setSelectedCat] = useState("All");
     const [selectedDocId, setSelectedDocId] = useState(1);
     const [activeView, setView] = useState<'summary' | 'full'>('summary');
-    const [ticker, setTicker] = useState('');
 
     const categories = ["All", "Global Macro", "FX Strategy", "Fixed Income", "Commodities", "Crypto", "Quantitative"];
     const filteredDocs = selectedCat === "All" ? RESEARCH_DOCS : RESEARCH_DOCS.filter(d => d.cat === selectedCat);
