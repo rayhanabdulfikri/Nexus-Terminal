@@ -1,10 +1,9 @@
 import { useEffect } from 'react';
-import Sentiment from './Sentiment';
+import NewsFeed from './NewsFeed';
 import '../MacroRegime/MacroFullScreen.css';
 import { useTerminal } from '../../context/TerminalContext';
-import { X } from 'lucide-react';
 
-export default function SentimentFullScreen() {
+export default function NewsFullScreen() {
     const { setActiveView } = useTerminal();
 
     useEffect(() => {
@@ -19,16 +18,14 @@ export default function SentimentFullScreen() {
         <div className="macro-fs-container" style={{ background: '#02090b' }}>
             <div className="macro-fs-header">
                 <div>
-                    <h1 className="macro-fs-title">MARKET PARTICIPANT SENTIMENT ENGINE</h1>
-                    <div className="macro-fs-subtitle">COT INSTITUTIONAL & RETAIL CROWD ANALYSIS • {new Date().toLocaleDateString()}</div>
+                    <h1 className="macro-fs-title">MACRO NEWS TERMINAL</h1>
+                    <div className="macro-fs-subtitle">REAL-TIME GLOBAL NEWS FEED · IMPACT ANALYSIS · ASSET REACTIONS</div>
                 </div>
-                <button className="macro-fs-close" onClick={() => setActiveView("DASHBOARD")} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <X size={14} /> CLOSE
-                </button>
+                <button className="macro-fs-close" onClick={() => setActiveView("DASHBOARD")}>✕ CLOSE</button>
             </div>
             
             <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                <Sentiment />
+                <NewsFeed />
             </div>
         </div>
     );

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import '../MacroRegime/MacroFullScreen.css';
 import { useTerminal } from '../../context/TerminalContext';
+import { X } from 'lucide-react';
 import './TradeFullScreen.css';
 
 type OrderType = 'MARKET' | 'LIMIT' | 'STOP' | 'STOP_LIMIT' | 'OCO' | 'TRAILING_STOP';
@@ -169,24 +170,21 @@ export default function TradeFullScreen() {
     const maxBarSize = Math.max(...[...bids, ...asks].map(l => l.size), 1);
 
     return (
-        <div className="trade-v2-container">
+        <div className="trade-fs-container">
             {/* Header */}
             <div className="macro-fs-header" style={{ flexShrink: 0, padding: '10px 20px' }}>
                 <div>
-                    <h1 className="macro-fs-title" style={{ fontSize: '14px' }}>ADVANCED TRADING TERMINAL v2</h1>
+                    <h1 className="macro-fs-title" style={{ fontSize: '14px' }}>ADVANCED TRADING TERMINAL</h1>
                     <div className="macro-fs-subtitle">MULTI-ASSET ORDER EXECUTION DESK · BLOOMBERG-STYLE · {new Date().toLocaleDateString()}</div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                    <div style={{ fontSize: '10px', color: 'var(--bb-text-dim)' }}>
-                        <span className="kbd" style={{ fontSize: '9px' }}>ESC</span> CLOSE
-                    </div>
-                    <button className="macro-fs-close" onClick={() => setActiveView('DASHBOARD')}>✕ CLOSE</button>
-                </div>
+                <button className="macro-fs-close" onClick={() => setActiveView('DASHBOARD')} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <X size={14} /> CLOSE
+                </button>
             </div>
 
-            <div className="trade-v2-body">
+            <div className="trade-fs-body">
                 {/* LEFT: Ticker Selector + Price Display */}
-                <div className="trade-v2-left">
+                <div className="trade-fs-left">
                     {/* Ticker Selector */}
                     <div className="trade-panel-box" style={{ flexShrink: 0 }}>
                         <div className="trade-panel-title">INSTRUMENT</div>
@@ -266,7 +264,7 @@ export default function TradeFullScreen() {
                 </div>
 
                 {/* CENTER: Order Entry + Tabs */}
-                <div className="trade-v2-center">
+                <div className="trade-fs-center">
                     {/* Tab Bar */}
                     <div style={{ display: 'flex', borderBottom: '1px solid var(--bb-teal-border)', flexShrink: 0 }}>
                         {(['ORDER', 'ORDERS', 'FILLS'] as const).map(tab => (
@@ -483,7 +481,7 @@ export default function TradeFullScreen() {
                 </div>
 
                 {/* RIGHT: Risk Calculator + Market Context */}
-                <div className="trade-v2-right">
+                <div className="trade-fs-right">
                     {/* Risk/Reward Calculator */}
                     <div className="trade-panel-box" style={{ flexShrink: 0 }}>
                         <div className="trade-panel-title">RISK/REWARD CALCULATOR</div>

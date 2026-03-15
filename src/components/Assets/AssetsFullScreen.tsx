@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as echarts from 'echarts';
 import './AssetsFullScreen.css';
 import { useTerminal } from '../../context/TerminalContext';
+import { X } from 'lucide-react';
 
 // ── Performance table data ──
 const ASSET_DATA = [
@@ -24,7 +25,6 @@ const ASSET_DATA = [
     { class:"Crypto", name:"Ethereum",    mark:3281,   d1:2.2,   w1:9.8,   m1:38.4,  ytd:52.4, vol:62.0 },
 ];
 
-// ── Equity Sector Heatmap data ──
 const SECTORS = [
     { name:"Technology",    ytd:18.4, d1:1.8,  mktCap:"$15.2T", leader:"NVDA +210%" },
     { name:"Healthcare",    ytd:5.2,  d1:0.4,  mktCap:"$8.1T",  leader:"LLY +68%" },
@@ -39,18 +39,19 @@ const SECTORS = [
     { name:"Consumer Stap", ytd:2.1,  d1:0.1,  mktCap:"$4.2T",  leader:"PG +4%" },
 ];
 
-// ── Correlation matrix ──
 const CORR_ASSETS = ['SPX','DXY','GOLD','OIL','BTC','US10Y','EUR'];
 const CORR_MATRIX = [
-// SPX   DXY    GOLD  OIL   BTC   US10Y  EUR
-  [1.00, -0.65, -0.12, 0.42,  0.68, -0.58,  0.55],  // SPX
-  [-0.65, 1.00, -0.52,-0.38, -0.48,  0.45, -0.88],  // DXY
-  [-0.12,-0.52,  1.00, 0.28,  0.22, -0.15,  0.42],  // GOLD
-  [0.42, -0.38,  0.28, 1.00,  0.35, -0.28,  0.30],  // OIL
-  [0.68, -0.48,  0.22, 0.35,  1.00, -0.44,  0.40],  // BTC
-  [-0.58, 0.45, -0.15,-0.28, -0.44,  1.00, -0.40],  // US10Y
-  [0.55, -0.88,  0.42, 0.30,  0.40, -0.40,  1.00],  // EUR
+  [1.00, -0.65, -0.12, 0.42,  0.68, -0.58,  0.55],
+  [-0.65, 1.00, -0.52,-0.38, -0.48,  0.45, -0.88],
+  [-0.12,-0.52,  1.00, 0.28,  0.22, -0.15,  0.42],
+  [0.42, -0.38,  0.28, 1.00,  0.35, -0.28,  0.30],
+  [0.68, -0.48,  0.22, 0.35,  1.00, -0.44,  0.40],
+  [-0.58, 0.45, -0.15,-0.28, -0.44,  1.00, -0.40],
+  [0.55, -0.88,  0.42, 0.30,  0.40, -0.40,  1.00],
 ];
+
+const CURRENCIES = ['USD', 'EUR', 'JPY', 'GBP', 'AUD', 'CAD', 'CHF', 'NZD'];
+const mockFXMatrix = () => CURRENCIES.map(base => CURRENCIES.map(quote => base === quote ? 0 : parseFloat(((Math.random() - 0.5) * 2).toFixed(2))));
 
 const ColorMap = (val: number) => {
     if (val >  5) return { bg: 'rgba(0,230,118,0.2)', color: '#00e676' };
@@ -60,10 +61,20 @@ const ColorMap = (val: number) => {
     return { bg: 'transparent', color: 'var(--bb-text-dim)' };
 };
 
-export default function AssetsFullScreen() {
+interface AssetsFullScreenProps {
+    defaultTab?: "performance" | "correlation" | "sectors" | "fx";
+}
+
+export default function AssetsFullScreen({ defaultTab = "performance" }: AssetsFullScreenProps) {
     const { setActiveView } = useTerminal();
     const [filter, setFilter] = useState("ALL");
-    const [activeTab, setActiveTab] = useState<"performance" | "correlation" | "sectors">("performance");
+    const [activeTab, setActiveTab] = useState<"performance" | "correlation" | "sectors" | "fx">(defaultTab);
+    const [fxMatrix] = useState(mockFXMatrix());
+
+    useEffect(() => {
+        setActiveTab(defaultTab);
+    }, [defaultTab]);
+    
     const chartRefBar     = useRef<HTMLDivElement>(null);
     const chartRefScatter = useRef<HTMLDivElement>(null);
     const chartRefCorr    = useRef<HTMLDivElement>(null);
@@ -78,7 +89,6 @@ export default function AssetsFullScreen() {
 
     const filteredData = filter === "ALL" ? ASSET_DATA : ASSET_DATA.filter(d => d.class === filter);
 
-    // ── Performance charts ──
     useEffect(() => {
         if (activeTab !== 'performance' || !chartRefBar.current || !chartRefScatter.current) return;
         const chartBar     = echarts.init(chartRefBar.current);
@@ -92,7 +102,7 @@ export default function AssetsFullScreen() {
             xAxis: { type: 'value', axisLine: { lineStyle: { color: '#163344' } }, splitLine: { lineStyle: { color: '#163344', type: 'dashed' } }, axisLabel: { color: '#5c8397', formatter: '{value}%' } },
             yAxis: { type: 'category', data: sorted.map(d => d.name), axisLine: { lineStyle: { color: '#163344' } }, axisLabel: { color: '#5c8397', fontWeight: 700, fontSize: 10 } },
             series: [{ type: 'bar', barMaxWidth: 18,
-                data: sorted.map(d => ({ value: d.ytd, itemStyle: { color: d.ytd > 0 ? '#00e676' : '#ff3d57', borderRadius: d.ytd > 0 ? [0,3,3,0] : [3,0,0,3] } })),
+                data: sorted.map(d => ({ value: d.ytd, itemStyle: { color: d.ytd > 0 ? '#00e676' : '#ff4d4d', borderRadius: d.ytd > 0 ? [0,3,3,0] : [3,0,0,3] } })),
                 label: { show: true, position: 'right', color: '#8caebf', formatter: (p: any) => `${p.value > 0 ? '+' : ''}${p.value}%`, fontSize: 10 } }],
         });
 
@@ -112,7 +122,6 @@ export default function AssetsFullScreen() {
         return () => { window.removeEventListener('resize', resize); chartBar.dispose(); chartScatter.dispose(); };
     }, [filteredData, activeTab]);
 
-    // ── Correlation Matrix heatmap ──
     useEffect(() => {
         if (activeTab !== 'correlation' || !chartRefCorr.current) return;
         const chart = echarts.init(chartRefCorr.current);
@@ -121,20 +130,12 @@ export default function AssetsFullScreen() {
 
         chart.setOption({
             backgroundColor: 'transparent',
-            tooltip: { formatter: (p: any) => {
-                const val = (p.data[2] as number).toFixed(2);
-                return `${CORR_ASSETS[p.data[1]]} ↔ ${CORR_ASSETS[p.data[0]]}: <b>${val}</b>`;
-            }, backgroundColor: '#0b2730', borderColor: '#1a3a4a', textStyle: { color: '#cbd5e1' } },
+            tooltip: { formatter: (p: any) => `${CORR_ASSETS[p.data[1]]} ↔ ${CORR_ASSETS[p.data[0]]}: <b>${(p.data[2] as number).toFixed(2)}</b>`, backgroundColor: '#0b2730', borderColor: '#1a3a4a', textStyle: { color: '#cbd5e1' } },
             grid: { left: '12%', right: '5%', bottom: '12%', top: '8%' },
             xAxis: { type: 'category', data: CORR_ASSETS, axisLabel: { color: '#5c8397', fontWeight: 700 }, axisLine: { lineStyle: { color: '#163344' } }, splitLine: { show: false } },
             yAxis: { type: 'category', data: CORR_ASSETS, axisLabel: { color: '#5c8397', fontWeight: 700 }, axisLine: { lineStyle: { color: '#163344' } }, splitLine: { show: false } },
-            visualMap: { min: -1, max: 1, calculable: false, orient: 'horizontal', left: 'center', bottom: '0%', textStyle: { color: '#5c8397', fontSize: 9 },
-                inRange: { color: ['#ff3d57','#0a1e2a','#00e676'] }, itemWidth: 15, itemHeight: 10 },
-            series: [{
-                type: 'heatmap', data: flatData,
-                label: { show: true, color: '#fff', fontSize: 11, fontWeight: 700, formatter: (p: any) => (p.data[2] as number).toFixed(2) },
-                emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.5)' } },
-            }],
+            visualMap: { min: -1, max: 1, calculable: false, orient: 'horizontal', left: 'center', bottom: '0%', textStyle: { color: '#5c8397', fontSize: 9 }, inRange: { color: ['#ff3d57','#0a1e2a','#00e676'] }, itemWidth: 15, itemHeight: 10 },
+            series: [{ type: 'heatmap', data: flatData, label: { show: true, color: '#fff', fontSize: 11, fontWeight: 700, formatter: (p: any) => (p.data[2] as number).toFixed(2) }, emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.5)' } } }],
         });
 
         const resize = () => chart.resize();
@@ -149,15 +150,17 @@ export default function AssetsFullScreen() {
                     <h1 className="macro-fs-title">CROSS-ASSET INTELLIGENCE MATRIX</h1>
                     <div className="macro-fs-subtitle">PERFORMANCE · INTER-ASSET CORRELATIONS · EQUITY SECTORS · {new Date().toLocaleDateString()}</div>
                 </div>
-                <button className="macro-fs-close" onClick={() => setActiveView("DASHBOARD")}>✕ CLOSE</button>
+                <button className="macro-fs-close" onClick={() => setActiveView("DASHBOARD")} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <X size={14} /> CLOSE
+                </button>
             </div>
 
-            {/* ── Tab Bar ── */}
             <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--bb-teal-border)', background: 'rgba(2,8,14,0.8)', flexShrink: 0 }}>
                 {[
-                    { id: 'performance',  label: 'PERFORMANCE & RISK-RETURN' },
-                    { id: 'correlation',  label: 'INTER-ASSET CORRELATIONS' },
-                    { id: 'sectors',      label: 'EQUITY SECTOR HEATMAP' },
+                    { id: 'performance', label: 'PERFORMANCE & RISK-RETURN' },
+                    { id: 'correlation', label: 'INTER-ASSET CORRELATIONS' },
+                    { id: 'sectors',     label: 'EQUITY SECTOR HEATMAP' },
+                    { id: 'fx',          label: 'G10 FX STRENGTH MATRIX' },
                 ].map(t => (
                     <button key={t.id} onClick={() => setActiveTab(t.id as any)} style={{
                         padding: '9px 18px', background: 'transparent', border: 'none',
@@ -168,7 +171,6 @@ export default function AssetsFullScreen() {
                 ))}
             </div>
 
-            {/* ── TAB 1: Performance ── */}
             {activeTab === 'performance' && (
                 <div className="assets-fs-content">
                     <div className="a-col-table">
@@ -185,10 +187,7 @@ export default function AssetsFullScreen() {
                         <div className="a-table-body">
                             <table className="a-table">
                                 <thead>
-                                    <tr>
-                                        <th>ASSET</th><th>MARK</th>
-                                        <th>1D</th><th>1W</th><th>1M</th><th>YTD</th><th>VOL (ann.)</th>
-                                    </tr>
+                                    <tr><th>ASSET</th><th>MARK</th><th>1D</th><th>1W</th><th>1M</th><th>YTD</th><th>VOL (ann.)</th></tr>
                                 </thead>
                                 <tbody>
                                     {filteredData.map((d, i) => {
@@ -222,13 +221,11 @@ export default function AssetsFullScreen() {
                 </div>
             )}
 
-            {/* ── TAB 2: Correlation Matrix ── */}
             {activeTab === 'correlation' && (
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, padding: '12px', gap: '10px' }}>
-                    {/* Legend row */}
                     <div style={{ display:'flex', gap:'16px', flexShrink:0 }}>
                         {[
-                            { label:'Strong +Corr (>0.6)',  color:'#00e676', bg:'rgba(0,230,118,0.1)' },
+                            { label:'Strong +Corr (>0.6)', color:'#00e676', bg:'rgba(0,230,118,0.1)' },
                             { label:'Weak Corr (0 to 0.3)', color:'#5c8397', bg:'transparent' },
                             { label:'Strong -Corr (<-0.6)', color:'#ff3d57', bg:'rgba(255,61,87,0.1)' },
                         ].map(l => (
@@ -237,71 +234,59 @@ export default function AssetsFullScreen() {
                                 <span style={{ fontSize:'9px', color:'var(--bb-text-dim)', letterSpacing:'0.06em' }}>{l.label}</span>
                             </div>
                         ))}
-                        <div style={{ marginLeft:'auto', fontSize:'9px', color:'var(--bb-text-dim)', display:'flex', alignItems:'center', gap:'6px' }}>
-                            <span>KEY INSIGHT:</span>
-                            <span style={{ color:'var(--bb-amber)', fontWeight:800 }}>USD ↔ EUR: -0.88</span>
-                            <span style={{ color:'var(--bb-text-dim)' }}>|</span>
-                            <span style={{ color:'var(--bb-blue)', fontWeight:800 }}>SPX ↔ BTC: +0.68</span>
-                        </div>
                     </div>
-                    {/* Main correlation heatmap */}
                     <div style={{ flex:1, minHeight:0, background:'rgba(8,22,30,0.6)', border:'1px solid var(--bb-teal-border)', borderRadius:'3px', padding:'8px' }}>
-                        <div style={{ fontSize:'9px', fontWeight:800, color:'var(--bb-blue)', letterSpacing:'0.1em', marginBottom:'4px' }}>
-                            INTER-ASSET CORRELATION MATRIX — 90D ROLLING
-                        </div>
+                        <div style={{ fontSize:'9px', fontWeight:800, color:'var(--bb-blue)', letterSpacing:'0.1em', marginBottom:'4px' }}>INTER-ASSET CORRELATION MATRIX — 90D ROLLING</div>
                         <div ref={chartRefCorr} style={{ width:'100%', height:'calc(100% - 24px)' }} />
-                    </div>
-                    {/* Interpretation */}
-                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'8px', flexShrink:0 }}>
-                        {[
-                            { title:'RISK-ON BASKET', items:['SPX + BTC: +0.68 (strong co-move)', 'EUR + SPX: +0.55 (pro-cyclical EUR)', 'OIL + SPX: +0.42 (growth proxy)'] },
-                            { title:'SAFE HAVEN BASKET', items:['GOLD ↔ DXY: -0.52 (inverse)', 'US10Y ↔ SPX: -0.58 (flight-to-quality)', 'GOLD ↔ EUR: +0.42 (both vs USD)'] },
-                            { title:'TRADING IMPLICATIONS', items:['USD strength → Risk-Off everywhere', 'BTC leads Equity risk appetite', 'Gold = partial SPX hedge only'] },
-                        ].map(b => (
-                            <div key={b.title} style={{ padding:'10px 12px', background:'rgba(8,22,30,0.6)', border:'1px solid var(--bb-teal-border)', borderRadius:'3px', borderLeft:'3px solid var(--bb-blue)' }}>
-                                <div style={{ fontSize:'8px', fontWeight:800, color:'var(--bb-blue)', letterSpacing:'0.1em', marginBottom:'6px' }}>{b.title}</div>
-                                {b.items.map((it,i) => <div key={i} style={{ fontSize:'10px', color:'var(--bb-text-dim)', marginBottom:'3px', lineHeight:1.4 }}>• {it}</div>)}
-                            </div>
-                        ))}
                     </div>
                 </div>
             )}
 
-            {/* ── TAB 3: Equity Sector Heatmap ── */}
             {activeTab === 'sectors' && (
                 <div style={{ flex:1, display:'flex', flexDirection:'column', padding:'12px', gap:'10px', overflow:'hidden' }}>
-                    <div style={{ fontSize:'9px', fontWeight:800, color:'var(--bb-text-dim)', letterSpacing:'0.1em', flexShrink:0, display:'flex', alignItems:'center', gap:'12px' }}>
-                        <span>S&P 500 SECTOR WEIGHTS — YTD vs 1D PERFORMANCE</span>
-                        <span style={{ color:'var(--bb-green)', borderLeft:'3px solid var(--bb-green)', paddingLeft:'8px' }}>GREEN = OUTPERFORM</span>
-                        <span style={{ color:'var(--bb-red)', borderLeft:'3px solid var(--bb-red)', paddingLeft:'8px' }}>RED = UNDERPERFORM</span>
-                    </div>
                     <div style={{ flex:1, display:'grid', gridTemplateColumns:'repeat(4,1fr)', gridTemplateRows:'repeat(3,1fr)', gap:'6px', minHeight:0 }}>
                         {SECTORS.map((s) => {
                             const isPos = s.ytd >= 0;
                             const intensity = Math.min(Math.abs(s.ytd) / 20, 1);
-                            const bg = isPos
-                                ? `rgba(0,230,118,${0.05 + intensity * 0.2})`
-                                : `rgba(255,61,87,${0.05 + intensity * 0.2})`;
-                            const border = isPos ? 'rgba(0,230,118,0.3)' : 'rgba(255,61,87,0.3)';
+                            const bg = isPos ? `rgba(0,230,118,${0.05 + intensity * 0.2})` : `rgba(255,61,87,${0.05 + intensity * 0.2})`;
                             return (
-                                <div key={s.name} style={{ background:bg, border:`1px solid ${border}`, borderRadius:'3px', padding:'12px', display:'flex', flexDirection:'column', justifyContent:'space-between', cursor:'pointer', transition:'all 0.15s' }}
-                                    onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.02)')}
-                                    onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
-                                >
+                                <div key={s.name} style={{ background:bg, border:`1px solid ${isPos ? 'rgba(0,230,118,0.3)' : 'rgba(255,61,87,0.3)'}`, borderRadius:'3px', padding:'12px', cursor:'pointer' }}>
                                     <div style={{ fontSize:'10px', fontWeight:800, color:'var(--bb-text)', marginBottom:'4px' }}>{s.name}</div>
-                                    <div style={{ fontSize:'22px', fontWeight:900, fontFamily:'var(--font-mono)', color: isPos ? '#00e676' : '#ff3d57', lineHeight:1 }}>
-                                        {s.ytd > 0 ? '+' : ''}{s.ytd}%
-                                    </div>
-                                    <div style={{ display:'flex', justifyContent:'space-between', marginTop:'6px' }}>
-                                        <span style={{ fontSize:'9px', color: s.d1 >= 0 ? '#00e676' : '#ff3d57', fontFamily:'var(--font-mono)' }}>
-                                            1D: {s.d1 > 0 ? '+' : ''}{s.d1}%
-                                        </span>
-                                        <span style={{ fontSize:'8px', color:'var(--bb-text-dim)' }}>{s.mktCap}</span>
-                                    </div>
-                                    <div style={{ fontSize:'8px', color:'var(--bb-amber)', marginTop:'3px', letterSpacing:'0.04em' }}>↑ {s.leader}</div>
+                                    <div style={{ fontSize:'22px', fontWeight:900, fontFamily:'var(--font-mono)', color: isPos ? '#00e676' : '#ff3d57', lineHeight:1 }}>{s.ytd > 0 ? '+' : ''}{s.ytd}%</div>
+                                    <div style={{ display:'flex', justifyContent:'space-between', marginTop:'6px' }}><span style={{ fontSize:'9px', color: s.d1 >= 0 ? '#00e676' : '#ff3d57' }}>1D: {s.d1 > 0 ? '+' : ''}{s.d1}%</span><span style={{ fontSize:'8px', color:'var(--bb-text-dim)' }}>{s.mktCap}</span></div>
                                 </div>
                             );
                         })}
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'fx' && (
+                <div style={{ flex: 1, padding: '20px', overflowY: 'auto' }}>
+                    <div style={{ background: 'rgba(8, 22, 30, 0.6)', border: '1px solid var(--bb-teal-border)', borderRadius: '4px', padding: '20px' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                                <tr>
+                                    <th style={{ padding: '10px', color: 'var(--bb-amber)', fontSize: '10px', textAlign: 'left' }}>BASE \ QUOTE</th>
+                                    {CURRENCIES.map(c => <th key={c} style={{ padding: '10px', color: 'var(--bb-text-dim)', fontSize: '10px' }}>{c}</th>)}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {CURRENCIES.map((base, i) => (
+                                    <tr key={base} style={{ borderTop: '1px solid rgba(22,51,68,0.3)' }}>
+                                        <td style={{ padding: '15px 10px', color: 'var(--bb-text-bright)', fontWeight: 800, fontSize: '12px' }}>{base}</td>
+                                        {fxMatrix[i].map((val, j) => (
+                                            <td key={j} style={{ 
+                                                padding: '15px 10px', textAlign: 'center', 
+                                                background: val > 0.5 ? 'rgba(0, 230, 118, 0.2)' : val < -0.5 ? 'rgba(255, 61, 87, 0.2)' : 'transparent',
+                                                color: val > 0.5 ? '#00e676' : val < -0.5 ? '#ff3d57' : '#5c8397',
+                                                fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: Math.abs(val) > 0.5 ? 900 : 400
+                                            }}>{val === 0 ? '—' : (val > 0 ? '+' : '') + val + '%'}</td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             )}

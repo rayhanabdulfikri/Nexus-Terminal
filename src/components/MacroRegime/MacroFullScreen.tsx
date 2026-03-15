@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import * as echarts from 'echarts';
 import './MacroFullScreen.css';
 import { useTerminal } from '../../context/TerminalContext';
+import { X, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { useCommandBarStats } from '../../hooks/useCommandBarStats';
 
 const MACRO_COUNTRIES: Record<string, any> = {
     "USD": {
@@ -72,6 +74,21 @@ const YIELD_CURVES: Record<string, { current: number[]; prev3m: number[]; prev1y
 
 const YIELD_TENORS = ['1M','3M','6M','1Y','2Y','3Y','5Y','10Y','30Y'];
 
+const MOMENTUM_DATA = [
+    { country: 'USA', index: 42.5,  trend: 'UP',   surprise: 'BEAT',    recent: 'NFP, CPI, Retail Sales' },
+    { country: 'EUR', index: -12.8, trend: 'DOWN', surprise: 'MISS',    recent: 'PMI, GDP, ZEW' },
+    { country: 'GBP', index: 5.2,   trend: 'SIDE', surprise: 'NEUTRAL', recent: 'Wages, CPI, GDP' },
+    { country: 'JPY', index: -8.4,  trend: 'UP',   surprise: 'MISS',    recent: 'CPI, Tankan, Industrial Prod' },
+    { country: 'AUD', index: 18.9,  trend: 'UP',   surprise: 'BEAT',    recent: 'Employment, Retail Sales' },
+    { country: 'CAD', index: -2.1,  trend: 'DOWN', surprise: 'MISS',    recent: 'GDP, Unemployment' },
+];
+
+const LIQUIDITY_PILLARS = [
+    { label: 'Fed Balance Sheet', val: '$7.58T', chg: '-$95B/mo', color: '#ff4d4d' },
+    { label: 'TGA Balance',       val: '$742B',  chg: 'Filling',   color: '#00b8e0' },
+    { label: 'Reverse Repo (RRP)',val: '$440B',  chg: 'Draining',  color: '#00e676' },
+];
+
 const INDICES = [
     { name:"S&P 500", val:"5,123.4", chg:"+1.2%" },
     { name:"NASDAQ",  val:"16,234.1",chg:"+1.5%" },
@@ -83,16 +100,27 @@ const INDICES = [
     { name:"VIX",     val:"13.42",   chg:"-0.8" },
 ];
 
-export default function MacroFullScreen() {
-    const { setActiveView } = useTerminal();
-    const [selectedCountry, setSelectedCountry] = useState("USD");
-    const [activeTab, setActiveTab] = useState<"macro" | "yieldcurve" | "cbpolicy">("macro");
-    const chartRef1 = useRef<HTMLDivElement>(null);
-    const chartRef2 = useRef<HTMLDivElement>(null);
-    const chartRefYC = useRef<HTMLDivElement>(null);
-    const chartRefM2 = useRef<HTMLDivElement>(null);
+interface MacroFullScreenProps {
+    defaultTab?: "regime" | "macro" | "cbpolicy" | "liquidity" | "momentum" | "yieldcurve";
+}
 
-    const data = MACRO_COUNTRIES[selectedCountry];
+export default function MacroFullScreen({ defaultTab = "regime" }: MacroFullScreenProps) {
+    const { setActiveView } = useTerminal();
+    useCommandBarStats();
+    const [selectedCountry, setSelectedCountry] = useState("USD");
+    
+    const initialTab = defaultTab;
+    const [activeTab, setActiveTab] = useState<"regime" | "macro" | "cbpolicy" | "liquidity" | "momentum" | "yieldcurve">(initialTab as any);
+
+    useEffect(() => {
+        setActiveTab(defaultTab as any);
+    }, [defaultTab]);
+
+    const chartRefGDP = useRef<HTMLDivElement>(null);
+    const chartRefCPI = useRef<HTMLDivElement>(null);
+    const chartRefYC  = useRef<HTMLDivElement>(null);
+    const chartRefM2  = useRef<HTMLDivElement>(null);
+    const chartRefMom = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
@@ -102,98 +130,95 @@ export default function MacroFullScreen() {
         return () => window.removeEventListener('keydown', handleEsc);
     }, [setActiveView]);
 
-    // ── GDP / CPI + Rate history charts ──
+    // ── Macro data charts ──
     useEffect(() => {
-        if (activeTab !== 'macro') return;
-        if (!chartRef1.current || !chartRef2.current) return;
-        const c1 = echarts.init(chartRef1.current);
-        const c2 = echarts.init(chartRef2.current);
+        if (!chartRefGDP.current || !chartRefCPI.current || activeTab !== 'macro') return;
+        const data = MACRO_COUNTRIES[selectedCountry];
 
-        c1.setOption({
+        const chartGDP = echarts.init(chartRefGDP.current);
+        chartGDP.setOption({
             backgroundColor: 'transparent',
             tooltip: { trigger: 'axis', backgroundColor: '#0b2730', borderColor: '#1a3a4a', textStyle: { color: '#cbd5e1' } },
-            legend: { data: ['GDP QoQ %', 'CPI YoY %'], bottom: 0, textStyle: { color: '#5c8397' }, icon: 'circle', itemWidth: 8, itemHeight: 8 },
-            grid: { left: '10%', right: '5%', bottom: '18%', top: '10%' },
-            xAxis: { type: 'category', data: data.labels, axisLabel: { color: '#5c8397' }, axisLine: { lineStyle: { color: '#163344' } } },
-            yAxis: { type: 'value', splitLine: { lineStyle: { color: '#163344', type: 'dashed' } }, axisLabel: { color: '#5c8397' } },
-            series: [
-                { name: 'GDP QoQ %', type: 'bar', data: data.gdpHistory, itemStyle: { color: (p: any) => p.data >= 0 ? '#00e676' : '#ff3d57', borderRadius: [2,2,0,0] } },
-                { name: 'CPI YoY %', type: 'line', data: data.cpiHistory, itemStyle: { color: '#ff3d57' }, lineStyle: { width: 2.5 }, symbolSize: 7, smooth: true },
-            ],
+            grid: { left: '8%', right: '4%', bottom: '15%', top: '10%' },
+            xAxis: { type: 'category', data: data.labels, axisLabel: { color: '#5c8397', fontSize: 10 } },
+            yAxis: { type: 'value', axisLabel: { color: '#5c8397', fontSize: 10 }, splitLine: { lineStyle: { color: '#163344', type: 'dashed' } } },
+            series: [{ name: 'GDP Growth', type: 'bar', data: data.gdpHistory, itemStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1, [{offset:0, color:'#00b8e0'}, {offset:1, color:'#004c6d'}]) }, barWidth: '40%', label: { show: true, position: 'top', color: '#00b8e0', fontSize: 10, formatter: '{c}%' } }]
         });
 
-        c2.setOption({
+        const chartCPI = echarts.init(chartRefCPI.current);
+        chartCPI.setOption({
             backgroundColor: 'transparent',
             tooltip: { trigger: 'axis', backgroundColor: '#0b2730', borderColor: '#1a3a4a', textStyle: { color: '#cbd5e1' } },
-            grid: { left: '10%', right: '5%', bottom: '18%', top: '10%' },
-            xAxis: { type: 'category', data: data.labels, axisLabel: { color: '#5c8397' }, axisLine: { lineStyle: { color: '#163344' } } },
-            yAxis: { type: 'value', splitLine: { lineStyle: { color: '#163344', type: 'dashed' } }, axisLabel: { color: '#5c8397', formatter: '{value}%' } },
-            series: [{ name: 'Policy Rate', type: 'line', step: 'end', data: data.rateHistory, itemStyle: { color: '#ffaa00' }, lineStyle: { width: 3 }, areaStyle: { color: 'rgba(255,170,0,0.08)' }, symbolSize: 8 }],
+            grid: { left: '8%', right: '4%', bottom: '15%', top: '10%' },
+            xAxis: { type: 'category', data: data.labels, axisLabel: { color: '#5c8397', fontSize: 10 } },
+            yAxis: { type: 'value', axisLabel: { color: '#5c8397', fontSize: 10 }, splitLine: { lineStyle: { color: '#163344', type: 'dashed' } } },
+            series: [{ name: 'Inflation (CPI)', type: 'line', data: data.cpiHistory, smooth: true, lineStyle: { width: 3, color: '#ff4d4d' }, itemStyle: { color: '#ff4d4d' }, areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1, [{offset:0, color:'rgba(255,77,77,0.2)'}, {offset:1, color:'transparent'}]) }, symbolSize: 8 }]
         });
 
-        const resize = () => { c1.resize(); c2.resize(); };
+        const resize = () => { chartGDP.resize(); chartCPI.resize(); };
         window.addEventListener('resize', resize);
-        return () => { window.removeEventListener('resize', resize); c1.dispose(); c2.dispose(); };
-    }, [selectedCountry, activeTab, data]);
+        return () => { window.removeEventListener('resize', resize); chartGDP.dispose(); chartCPI.dispose(); };
+    }, [selectedCountry, activeTab]);
 
-    // ── Yield Curve chart ──
+    // ── Yield curve chart ──
     useEffect(() => {
-        if (activeTab !== 'yieldcurve' || !chartRefYC.current) return;
+        if (!chartRefYC.current || activeTab !== 'yieldcurve') return;
+        const yc = YIELD_CURVES[selectedCountry];
         const chart = echarts.init(chartRefYC.current);
-        const yc = YIELD_CURVES[selectedCountry] || YIELD_CURVES.USD;
-
         chart.setOption({
             backgroundColor: 'transparent',
-            tooltip: { trigger: 'axis', backgroundColor: '#0b2730', borderColor: '#1a3a4a', textStyle: { color: '#cbd5e1' }, formatter: (params: any) => {
-                return params.map((p: any) => `<span style="color:${p.color}">●</span> ${p.seriesName}: ${p.data.toFixed(2)}%`).join('<br/>');
-            }},
-            legend: { data: ['Current','3M Ago','1Y Ago'], bottom: 0, textStyle: { color: '#5c8397' }, icon: 'circle', itemWidth: 8, itemHeight: 8 },
-            grid: { left: '8%', right: '5%', bottom: '15%', top: '8%' },
-            xAxis: { type: 'category', data: YIELD_TENORS, axisLabel: { color: '#5c8397', fontWeight: 700 }, axisLine: { lineStyle: { color: '#163344' } } },
-            yAxis: { type: 'value', axisLabel: { color: '#5c8397', formatter: '{value}%' }, splitLine: { lineStyle: { color: '#163344', type: 'dashed' } } },
+            tooltip: { trigger: 'axis', backgroundColor: '#0b2730', borderColor: '#1a3a4a', textStyle: { color: '#cbd5e1' } },
+            legend: { data: ['Current', '3M Ago', '1Y Ago'], textStyle: { color: '#5c8397' }, right: 10, top: 0, itemWidth: 10 },
+            grid: { left: '6%', right: '4%', bottom: '15%', top: '15%' },
+            xAxis: { type: 'category', data: YIELD_TENORS, axisLabel: { color: '#5c8397', fontSize: 10 } },
+            yAxis: { type: 'value', axisLabel: { color: '#5c8397', fontSize: 10 }, splitLine: { lineStyle: { color: '#163344', type: 'dashed' } } },
             series: [
-                { name: 'Current', type: 'line', data: yc.current, itemStyle: { color: '#00e676' }, lineStyle: { color: '#00e676', width: 3 }, areaStyle: { color: 'rgba(0,230,118,0.06)' }, symbolSize: 7, smooth: true },
+                { name: 'Current', type: 'line', data: yc.current, itemStyle: { color: '#00e676' }, lineStyle: { width: 4 }, symbolSize: 10, smooth: true },
                 { name: '3M Ago',  type: 'line', data: yc.prev3m,  itemStyle: { color: '#ffaa00' }, lineStyle: { color: '#ffaa00', width: 2, type: 'dashed' }, symbolSize: 5, smooth: true },
                 { name: '1Y Ago',  type: 'line', data: yc.prev1y,  itemStyle: { color: '#5c8397' }, lineStyle: { color: '#5c8397', width: 1.5, type: 'dotted' }, symbolSize: 4, smooth: true },
-            ],
+            ]
         });
-
         const resize = () => chart.resize();
         window.addEventListener('resize', resize);
         return () => { window.removeEventListener('resize', resize); chart.dispose(); };
     }, [selectedCountry, activeTab]);
 
-    // ── M2 Money Supply chart ──
+    // ── M2 chart ──
     useEffect(() => {
-        if (activeTab !== 'cbpolicy' || !chartRefM2.current) return;
+        if (!chartRefM2.current || activeTab !== 'cbpolicy') return;
+        const data = MACRO_COUNTRIES[selectedCountry];
         const chart = echarts.init(chartRefM2.current);
-        const d = MACRO_COUNTRIES[selectedCountry];
-
         chart.setOption({
             backgroundColor: 'transparent',
             tooltip: { trigger: 'axis', backgroundColor: '#0b2730', borderColor: '#1a3a4a', textStyle: { color: '#cbd5e1' } },
-            legend: { data: ['M2 Money Supply ($T)','Policy Rate %'], bottom: 0, textStyle: { color: '#5c8397' }, icon: 'circle', itemWidth: 8, itemHeight: 8 },
-            grid: { left: '10%', right: '10%', bottom: '18%', top: '10%' },
-            xAxis: { type: 'category', data: d.labels, axisLabel: { color: '#5c8397' }, axisLine: { lineStyle: { color: '#163344' } } },
-            yAxis: [
-                { type: 'value', name: 'M2 ($T)', nameTextStyle: { color: '#5c8397' }, splitLine: { lineStyle: { color: '#163344', type: 'dashed' } }, axisLabel: { color: '#5c8397' } },
-                { type: 'value', name: 'Rate %', nameTextStyle: { color: '#5c8397' }, axisLabel: { color: '#5c8397' }, splitLine: { show: false } },
-            ],
-            series: [
-                { name: 'M2 Money Supply ($T)', type: 'bar', data: d.m2History, itemStyle: { color: 'rgba(0,184,224,0.7)', borderRadius: [2,2,0,0] }, yAxisIndex: 0 },
-                { name: 'Policy Rate %', type: 'line', data: d.rateHistory, itemStyle: { color: '#ffaa00' }, lineStyle: { width: 2.5 }, step: 'end', yAxisIndex: 1, symbolSize: 6 },
-            ],
+            grid: { left: '8%', right: '4%', bottom: '15%', top: '10%' },
+            xAxis: { type: 'category', data: data.labels, axisLabel: { color: '#5c8397', fontSize: 10 } },
+            yAxis: [{ type: 'value', name: 'Money Supply (T)', nameTextStyle: { color: '#5c8397' }, axisLabel: { color: '#5c8397' }, splitLine: { lineStyle: { color: '#163344', type: 'dashed' } } }, { type: 'value', name: 'Policy Rate %', nameTextStyle: { color: '#5c8397' }, axisLabel: { color: '#5c8397' }, splitLine: { show: false } }],
+            series: [{ name: 'M2 Supply', type: 'bar', data: data.m2History, itemStyle: { color: 'rgba(0,184,224,0.3)' } }, { name: 'Rate History', type: 'line', yAxisIndex: 1, data: data.rateHistory, lineStyle: { color: '#ffaa00', width: 3 }, itemStyle: { color: '#ffaa00' } }]
         });
-
         const resize = () => chart.resize();
         window.addEventListener('resize', resize);
         return () => { window.removeEventListener('resize', resize); chart.dispose(); };
     }, [selectedCountry, activeTab]);
 
-    // ── Inversion signal for yield curve ──
-    const yc = YIELD_CURVES[selectedCountry] || YIELD_CURVES.USD;
-    const isInverted2s10s = yc.current[4] > yc.current[7];
-    const spread2s10s = (yc.current[7] - yc.current[4]).toFixed(2);
+    // ── Momentum chart ──
+    useEffect(() => {
+        if (!chartRefMom.current || activeTab !== 'momentum') return;
+        const chart = echarts.init(chartRefMom.current);
+        chart.setOption({
+            backgroundColor: 'transparent',
+            tooltip: { trigger: 'axis', backgroundColor: '#0b2730', borderColor: '#1a3a4a', textStyle: { color: '#cbd5e1' } },
+            grid: { left: '5%', right: '5%', bottom: '10%', top: '5%', containLabel: true },
+            xAxis: { type: 'value', axisLabel: { color: '#5c8397' }, splitLine: { lineStyle: { color: '#163344', type: 'dashed' } } },
+            yAxis: { type: 'category', data: MOMENTUM_DATA.map(d => d.country), axisLabel: { color: '#cbd5e1', fontWeight: 800 } },
+            series: [{ name: 'ESI Momentum', type: 'bar', data: MOMENTUM_DATA.map(d => ({ value: d.index, itemStyle: { color: d.index >= 0 ? '#00e676' : '#ff4d4d' } })), barWidth: '60%', label: { show: true, position: 'right', color: '#cbd5e1', formatter: '{c}' } }]
+        });
+        const resize = () => chart.resize();
+        window.addEventListener('resize', resize);
+        return () => { window.removeEventListener('resize', resize); chart.dispose(); };
+    }, [activeTab]);
+
+    const data = MACRO_COUNTRIES[selectedCountry];
 
     return (
         <div className="macro-fs-container">
@@ -202,7 +227,9 @@ export default function MacroFullScreen() {
                     <h1 className="macro-fs-title">GLOBAL MACROMETRICS TERMINAL</h1>
                     <div className="macro-fs-subtitle">ECONOMIC DATA · YIELD CURVES · CENTRAL BANK POLICY · {new Date().toLocaleDateString()}</div>
                 </div>
-                <button className="macro-fs-close" onClick={() => setActiveView("DASHBOARD")}>✕ CLOSE</button>
+                <button className="macro-fs-close" onClick={() => setActiveView("DASHBOARD")} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <X size={14} /> CLOSE
+                </button>
             </div>
 
             {/* ── Live Ticker ── */}
@@ -219,120 +246,109 @@ export default function MacroFullScreen() {
             {/* ── Tab Bar ── */}
             <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--bb-teal-border)', background: 'rgba(2,8,14,0.8)', flexShrink: 0 }}>
                 {[
-                    { id: 'macro',      label: 'ECONOMIC DATA & DEMOGRAPHICS' },
-                    { id: 'yieldcurve', label: 'YIELD CURVE (FIXED INCOME)' },
-                    { id: 'cbpolicy',   label: 'CENTRAL BANKS & MONEY SUPPLY' },
+                    { id: 'regime',     label: 'REGIME NAVIGATOR' },
+                    { id: 'macro',      label: 'ECONOMIC DATA' },
+                    { id: 'yieldcurve', label: 'YIELD CURVES' },
+                    { id: 'cbpolicy',   label: 'MONETARY POLICY' },
+                    { id: 'liquidity',  label: 'NET LIQUIDITY' },
+                    { id: 'momentum',   label: 'MACRO MOMENTUM' },
                 ].map(t => (
                     <button key={t.id} onClick={() => setActiveTab(t.id as any)} style={{
-                        padding: '9px 18px', background: 'transparent', border: 'none',
+                        padding: '12px 20px', background: 'transparent', border: 'none',
                         borderBottom: activeTab === t.id ? '2px solid var(--bb-amber)' : '2px solid transparent',
                         color: activeTab === t.id ? 'var(--bb-amber)' : 'var(--bb-text-dim)',
-                        fontSize: '10px', fontWeight: 800, letterSpacing: '0.08em', cursor: 'pointer', transition: 'all 0.15s',
-                    }}>{t.label}</button>
+                        fontSize: '10px', fontWeight: 800, letterSpacing: '0.08em', cursor: 'pointer',
+                        transition: 'all 0.15s',
+                    }}>
+                        {t.label}
+                    </button>
                 ))}
             </div>
 
-            <div className="macro-fs-content">
-                {/* ── Sidebar ── */}
-                <div className="macro-fs-sidebar">
-                    <div className="m-side-title">REGIONS</div>
-                    {Object.keys(MACRO_COUNTRIES).map(k => (
-                        <div key={k} className={`m-side-item ${selectedCountry === k ? 'active' : ''}`} onClick={() => setSelectedCountry(k)}>
-                            {MACRO_COUNTRIES[k].name} ({k})
+            <div className="port-fs-content">
+                <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+                    {/* Country Selector for Macro/Yield Curve */}
+                    {(activeTab === 'macro' || activeTab === 'yieldcurve') && (
+                        <div style={{ display: 'flex', gap: '8px', padding: '12px', background: 'rgba(8,22,30,0.5)', borderBottom: '1px solid var(--bb-teal-border)', flexShrink: 0 }}>
+                            {Object.keys(MACRO_COUNTRIES).map(c => (
+                                <button key={c} onClick={() => setSelectedCountry(c)} style={{
+                                    padding: '8px 14px', background: selectedCountry === c ? 'var(--bb-blue)' : 'rgba(22,51,68,0.3)',
+                                    border: '1px solid var(--bb-teal-border)', color: selectedCountry === c ? '#fff' : 'var(--bb-text-dim)',
+                                    borderRadius: '3px', fontSize: '10px', fontWeight: 800, cursor: 'pointer'
+                                }}>{c}</button>
+                            ))}
                         </div>
-                    ))}
-
-                    <div className="m-side-title" style={{ marginTop: '16px' }}>REGIME INDICATORS</div>
-                    {[
-                        { label: 'Global Growth',    val: 'Decelerating', color: 'var(--bb-amber)' },
-                        { label: 'Global Inflation', val: 'Cooling',      color: 'var(--bb-green)'  },
-                        { label: 'Liquidity Trend',  val: 'Contracting',  color: 'var(--bb-red)'   },
-                        { label: 'Risk Appetite',    val: 'Risk-On',      color: 'var(--bb-green)'  },
-                    ].map(s => (
-                        <div key={s.label} className="m-side-stat">
-                            <div className="m-stat-label">{s.label}</div>
-                            <div style={{ fontSize: '11px', fontWeight: 700, color: s.color }}>{s.val}</div>
-                        </div>
-                    ))}
-
-                    {/* Yield Curve Inversion Signal */}
-                    <div className="m-side-title" style={{ marginTop: '16px' }}>YIELD CURVE SIGNAL</div>
-                    <div className="m-side-stat">
-                        <div className="m-stat-label">2s/10s Spread</div>
-                        <div style={{ fontSize: '13px', fontWeight: 800, color: isInverted2s10s ? 'var(--bb-red)' : 'var(--bb-green)', fontFamily: 'var(--font-mono)' }}>
-                            {parseFloat(spread2s10s) > 0 ? '+' : ''}{spread2s10s}%
-                        </div>
-                        <div style={{ fontSize: '8px', letterSpacing: '0.08em', fontWeight: 800, marginTop: '2px', color: isInverted2s10s ? 'var(--bb-red)' : 'var(--bb-green)' }}>
-                            {isInverted2s10s ? '⚠ INVERTED — RECESSION SIGNAL' : '✓ NORMAL (POSITIVE)'}
-                        </div>
-                    </div>
-
-                    {/* CB QE Status */}
-                    <div className="m-side-title" style={{ marginTop: '16px' }}>CB POLICY BIAS</div>
-                    {[
-                        { cb: 'FED',  bias: 'HOLD', color: 'var(--bb-amber)' },
-                        { cb: 'ECB',  bias: 'DOVISH', color: 'var(--bb-green)' },
-                        { cb: 'BOJ',  bias: 'HAWKISH', color: 'var(--bb-red)' },
-                        { cb: 'BOE',  bias: 'HOLD', color: 'var(--bb-amber)' },
-                        { cb: 'RBA',  bias: 'HOLD', color: 'var(--bb-amber)' },
-                    ].map(c => (
-                        <div key={c.cb} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0', borderBottom: '1px solid rgba(22,51,68,0.3)' }}>
-                            <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--bb-text-dim)' }}>{c.cb}</span>
-                            <span style={{ fontSize: '8px', fontWeight: 800, padding: '1px 6px', borderRadius: '2px', background: `${c.color}18`, color: c.color, border: `1px solid ${c.color}33`, letterSpacing: '0.06em' }}>{c.bias}</span>
-                        </div>
-                    ))}
-                </div>
-
-                {/* ── Main Area ── */}
-                <div className="macro-fs-main">
-
-                    {/* TAB 1: Economic Data */}
-                    {activeTab === 'macro' && (
-                        <>
-                            <div className="m-chart-row">
-                                <div className="m-chart-box">
-                                    <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-blue)', letterSpacing: '0.1em', padding: '8px 8px 4px' }}>GDP GROWTH vs INFLATION</div>
-                                    <div ref={chartRef1} style={{ width: '100%', height: 'calc(100% - 28px)' }} />
-                                </div>
-                                <div className="m-chart-box">
-                                    <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-blue)', letterSpacing: '0.1em', padding: '8px 8px 4px' }}>CENTRAL BANK POLICY RATE</div>
-                                    <div ref={chartRef2} style={{ width: '100%', height: 'calc(100% - 28px)' }} />
-                                </div>
-                            </div>
-                            <div className="m-analysis-box">
-                                <div className="m-ab-title">AI MACRO INTELLIGENCE: {MACRO_COUNTRIES[selectedCountry].name}</div>
-                                <div className="m-ab-text">{data.analysis}</div>
-                            </div>
-                        </>
                     )}
 
-                    {/* TAB 2: Yield Curve */}
-                    {activeTab === 'yieldcurve' && (
-                        <>
-                            {/* Spread indicators */}
-                            <div style={{ display: 'flex', gap: '10px', padding: '10px 12px', flexShrink: 0 }}>
+                    {/* TAB 1: Regime Navigator */}
+                    {activeTab === 'regime' && (
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '20px' }}>
+                            <div style={{ flex: 1, background: 'rgba(8, 22, 30, 0.4)', border: '1px solid var(--bb-teal-border)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px', padding: '1px' }}>
                                 {[
-                                    { label: '3M/10Y Spread', val: `${((yc.current[7] - yc.current[0]) * 100).toFixed(0)}bps`, pos: yc.current[7] > yc.current[0] },
-                                    { label: '2Y/10Y (2s10s)', val: `${(parseFloat(spread2s10s) * 100).toFixed(0)}bps`, pos: parseFloat(spread2s10s) > 0 },
-                                    { label: '5Y/30Y Spread', val: `${((yc.current[8] - yc.current[6]) * 100).toFixed(0)}bps`, pos: yc.current[8] > yc.current[6] },
-                                    { label: 'Curve Shape', val: isInverted2s10s ? 'INVERTED' : 'NORMAL', pos: !isInverted2s10s },
-                                    { label: 'FI Decision', val: isInverted2s10s ? 'LONG DURATION' : 'NEUTRAL', pos: true },
-                                ].map(s => (
-                                    <div key={s.label} style={{ flex: 1, padding: '8px 12px', background: 'rgba(8,22,30,0.6)', border: `1px solid ${s.pos ? 'rgba(0,230,118,0.2)' : 'rgba(255,61,87,0.2)'}`, borderRadius: '3px', borderTop: `3px solid ${s.pos ? 'var(--bb-green)' : 'var(--bb-red)'}` }}>
-                                        <div style={{ fontSize: '8px', color: 'var(--bb-text-dim)', letterSpacing: '0.1em', fontWeight: 800, marginBottom: '4px' }}>{s.label}</div>
-                                        <div style={{ fontSize: '16px', fontWeight: 900, fontFamily: 'var(--font-mono)', color: s.pos ? 'var(--bb-green)' : 'var(--bb-red)' }}>{s.val}</div>
+                                    { title: 'GOLDILOCKS', desc: 'Growth Up / Inflation Down', pos: 'TOP-RIGHT', color: '#00e676' },
+                                    { title: 'STAGFLATION', desc: 'Growth Down / Inflation Up', pos: 'TOP-LEFT', color: '#ff4d4d' },
+                                    { title: 'REFLATION', desc: 'Growth Up / Inflation Up', pos: 'BOTTOM-RIGHT', color: '#00b8e0' },
+                                    { title: 'DEFLATION', desc: 'Growth Down / Inflation Down', pos: 'BOTTOM-LEFT', color: '#ffaa00' }
+                                ].map(q => (
+                                    <div key={q.title} style={{ padding: '40px', background: '#020c12', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '10px', color: 'var(--bb-text-dim)', marginBottom: '8px' }}>{q.pos}</div>
+                                        <h2 style={{ fontSize: '28px', color: q.color, fontWeight: 900, letterSpacing: '0.1em', marginBottom: '12px' }}>{q.title}</h2>
+                                        <p style={{ fontSize: '12px', color: 'var(--bb-text-bright)', opacity: 0.7 }}>{q.desc}</p>
                                     </div>
                                 ))}
                             </div>
-                            <div style={{ flex: 1, minHeight: 0, padding: '0 12px 12px' }}>
-                                <div style={{ height: '100%', background: 'rgba(8,22,30,0.6)', border: '1px solid var(--bb-teal-border)', borderRadius: '3px', padding: '8px' }}>
-                                    <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-blue)', letterSpacing: '0.1em', marginBottom: '4px' }}>
-                                        {selectedCountry} SOVEREIGN YIELD CURVE — CURRENT vs 3M vs 1Y AGO
+                            <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(0,184,224,0.1)', border: '1px solid var(--bb-blue)', borderRadius: '4px' }}>
+                                <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--bb-blue-bright)', marginBottom: '6px' }}>CURRENT REGIME SIGNAL: <span style={{ color: '#00e676' }}>GOLDILOCKS (TRANSITIONING TO REFLATION)</span></div>
+                                <div style={{ fontSize: '12px', color: 'var(--bb-text-dim)' }}>Asset Preference: Equities+, Crypto+, Commodities+, Bonds-</div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TAB 2: Macro Data */}
+                    {activeTab === 'macro' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', padding: '12px', flexShrink: 0 }}>
+                                {[
+                                    { label: 'GDP GROWTH', val: `${data.gdpHistory[data.gdpHistory.length - 1]}%`, ref: chartRefGDP },
+                                    { label: 'INFLATION (CPI)', val: `${data.cpiHistory[data.cpiHistory.length - 1]}%`, ref: chartRefCPI },
+                                ].map(chart => (
+                                    <div key={chart.label} style={{ background: 'rgba(8,22,30,0.6)', border: '1px solid var(--bb-teal-border)', borderRadius: '3px', height: '220px', padding: '8px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                            <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-blue)', letterSpacing: '0.1em' }}>{chart.label} HISTORY</div>
+                                            <div style={{ fontSize: '14px', fontWeight: 900, color: '#fff' }}>{chart.val}</div>
+                                        </div>
+                                        <div ref={chart.ref} style={{ width: '100%', height: 'calc(100% - 30px)' }} />
                                     </div>
-                                    <div ref={chartRefYC} style={{ width: '100%', height: 'calc(100% - 24px)' }} />
+                                ))}
+                            </div>
+                            <div className="m-analysis-box" style={{ flex: 1, margin: '0 12px 12px' }}>
+                                <div className="m-ab-title">ECONOMIC ANALYSIS: {MACRO_COUNTRIES[selectedCountry].name}</div>
+                                <div className="m-ab-text" style={{ fontSize: '13px', lineHeight: 1.6 }}>
+                                    {MACRO_COUNTRIES[selectedCountry].analysis}
                                 </div>
                             </div>
-                        </>
+                        </div>
+                    )}
+
+                    {/* TAB: Yield Curve (New Dedicated Tab) */}
+                    {activeTab === 'yieldcurve' && (
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '12px', minHeight: 0 }}>
+                            <div style={{ flex: 1, padding: '12px' }}>
+                                <div style={{ height: '100%', background: 'rgba(8,22,30,0.6)', border: '1px solid var(--bb-teal-border)', borderRadius: '3px', padding: '12px' }}>
+                                    <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--bb-blue)', letterSpacing: '0.1em', marginBottom: '12px' }}>
+                                        {selectedCountry} SOVEREIGN YIELD CURVE — CURRENT vs 3M vs 1Y AGO
+                                    </div>
+                                    <div ref={chartRefYC} style={{ width: '100%', height: 'calc(100% - 30px)' }} />
+                                </div>
+                            </div>
+                            <div style={{ padding: '0 12px 12px' }}>
+                                <div style={{ background: 'rgba(0,184,224,0.05)', border: '1px solid var(--bb-blue)', padding: '12px', borderRadius: '4px', fontSize: '11px', color: 'var(--bb-text-dim)' }}>
+                                    <strong>Term Structure Insight:</strong> The yield curve illustrates the relationship between interest rates and time to maturity. 
+                                    An <strong>inverted curve</strong> (short-term rates {'>'} long-term rates) is a historically reliable recession signal, 
+                                    while a <strong>steepening curve</strong> often indicates expectations of economic growth and rising inflation.
+                                </div>
+                            </div>
+                        </div>
                     )}
 
                     {/* TAB 3: CB & Money Supply */}
@@ -340,10 +356,10 @@ export default function MacroFullScreen() {
                         <>
                             <div style={{ display: 'flex', gap: '10px', padding: '10px 12px', flexShrink: 0 }}>
                                 {[
-                                    { label: 'POLICY RATE',      val: `${data.rateHistory.at(-1)}%`,   color: 'var(--bb-amber)' },
-                                    { label: 'M2 MONEY SUPPLY',  val: `$${data.m2History.at(-1)}T`,     color: 'var(--bb-blue)' },
+                                    { label: 'POLICY RATE',      val: `${data.rateHistory[data.rateHistory.length - 1]}%`,   color: 'var(--bb-amber)' },
+                                    { label: 'M2 MONEY SUPPLY',  val: `$${data.m2History[data.m2History.length - 1]}T`,     color: 'var(--bb-blue)' },
                                     { label: 'QE/QT STATUS',     val: selectedCountry === 'USD' ? 'QT' : selectedCountry === 'JPY' ? 'QE→EXIT' : 'QT', color: 'var(--bb-red)' },
-                                    { label: 'ZERO LOWER BOUND', val: data.rateHistory.at(-1) <= 0.25 ? 'NEAR-ZLB' : 'ABOVE ZLB', color: data.rateHistory.at(-1) <= 0.25 ? 'var(--bb-amber)' : 'var(--bb-green)' },
+                                    { label: 'ZERO LOWER BOUND', val: data.rateHistory[data.rateHistory.length - 1] <= 0.25 ? 'NEAR-ZLB' : 'ABOVE ZLB', color: data.rateHistory[data.rateHistory.length - 1] <= 0.25 ? 'var(--bb-amber)' : 'var(--bb-green)' },
                                 ].map(m => (
                                     <div key={m.label} style={{ flex: 1, padding: '10px 12px', background: 'rgba(8,22,30,0.6)', border: '1px solid var(--bb-teal-border)', borderRadius: '3px', borderTop: `3px solid ${m.color}` }}>
                                         <div style={{ fontSize: '8px', color: 'var(--bb-text-dim)', letterSpacing: '0.1em', fontWeight: 800, marginBottom: '4px' }}>{m.label}</div>
@@ -369,6 +385,67 @@ export default function MacroFullScreen() {
                                 </div>
                             </div>
                         </>
+                    )}
+                    {/* TAB 4: Liquidity */}
+                    {activeTab === 'liquidity' && (
+                        <div style={{ flex: 1, display: 'flex', gap: '20px', padding: '20px' }}>
+                             <div style={{ flex: 2, background: 'rgba(8, 22, 30, 0.4)', border: '1px solid var(--bb-teal-border)', borderRadius: '4px', padding: '20px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--bb-blue)', fontWeight: 800, marginBottom: '20px' }}>USD NET LIQUIDITY MODEL</div>
+                                <div style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--bb-teal-border)', color: 'var(--bb-text-dim)' }}>
+                                    LIQUIDITY FLOW VIZ (FED BS - TGA - RRP)
+                                </div>
+                             </div>
+                             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                {LIQUIDITY_PILLARS.map(p => (
+                                    <div key={p.label} style={{ background: 'rgba(8,22,30,0.6)', border: '1px solid var(--bb-teal-border)', borderRadius: '4px', padding: '15px', borderLeft: `4px solid ${p.color}` }}>
+                                        <div style={{ fontSize: '9px', color: 'var(--bb-text-dim)', fontWeight: 800 }}>{p.label}</div>
+                                        <div style={{ fontSize: '20px', color: '#fff', fontWeight: 900, marginTop: '4px' }}>{p.val}</div>
+                                        <div style={{ fontSize: '10px', color: p.color, marginTop: '2px' }}>{p.chg}</div>
+                                    </div>
+                                ))}
+                                <div style={{ flex: 1, background: 'rgba(0,184,224,0.05)', padding: '15px', border: '1px solid var(--bb-blue)', borderRadius: '4px' }}>
+                                    <h4 style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-blue)', marginBottom: '12px' }}>MACRO OVERLAY</h4>
+                                    <p style={{ fontSize: '11px', color: 'var(--bb-text-dim)', lineHeight: 1.6 }}>
+                                        Despite ongoing QT, Net Liquidity has actually been expanding as the RRP drains faster than the Balance Sheet shrinks. 
+                                        <br/><br/>
+                                        <span style={{ color: 'var(--bb-green)', fontWeight: 800 }}>IMPACT:</span> Support for Equities and Risk assets remains high as long as RRP levels are above zero.
+                                    </p>
+                                </div>
+                             </div>
+                        </div>
+                    )}
+
+                    {/* TAB 5: Momentum (ESI) */}
+                    {activeTab === 'momentum' && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '20px', height: '100%', padding: '0 12px 12px' }}>
+                             <div style={{ background: 'rgba(8, 22, 30, 0.4)', border: '1px solid var(--bb-teal-border)', borderRadius: '4px', padding: '20px' }}>
+                                <div style={{ fontSize: '10px', color: 'var(--bb-blue)', fontWeight: 800, marginBottom: '20px' }}>REGIONAL SURPRISE VELOCITY (30D)</div>
+                                <div ref={chartRefMom} style={{ height: 'calc(100% - 30px)' }}></div>
+                             </div>
+                             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                <div style={{ background: 'rgba(2, 10, 16, 0.6)', border: '1px solid var(--bb-teal-border)', padding: '20px', borderRadius: '4px' }}>
+                                    <h3 style={{ fontSize: '10px', color: 'var(--bb-amber)', fontWeight: 800, marginBottom: '15px' }}>DATA WATCHLIST</h3>
+                                    {MOMENTUM_DATA.map((d, i) => (
+                                        <div key={i} style={{ padding: '10px 0', borderBottom: '1px solid rgba(22,51,68,0.3)' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <span style={{ fontSize: '12px', fontWeight: 900, color: '#fff' }}>{d.country}</span>
+                                                    {d.trend === 'UP' ? <TrendingUp size={12} color="var(--bb-green)" /> : d.trend === 'DOWN' ? <TrendingDown size={12} color="#ff4d4d" /> : <Minus size={12} color="var(--bb-text-dim)" />}
+                                                </div>
+                                                <span style={{ fontSize: '10px', fontWeight: 800, color: d.index >= 0 ? 'var(--bb-green)' : '#ff4d4d' }}>{d.surprise}</span>
+                                            </div>
+                                            <div style={{ fontSize: '9px', color: 'var(--bb-text-dim)' }}>Recent: {d.recent}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div style={{ padding: '20px', border: '1px solid var(--bb-teal-border)', background: 'rgba(0, 184, 224, 0.03)', borderRadius: '4px', flex: 1 }}>
+                                    <h4 style={{ color: 'var(--bb-blue-bright)', fontSize: '10px', fontWeight: 800, marginBottom: '10px' }}>MACRO ALPHA INSIGHT</h4>
+                                    <p style={{ fontSize: '11px', color: 'var(--bb-text-dim)', lineHeight: 1.6 }}>
+                                        US economy consistently beating manufacturing estimates while services softening slightly. Positive for USD duration.
+                                    </p>
+                                </div>
+                             </div>
+                        </div>
                     )}
                 </div>
             </div>

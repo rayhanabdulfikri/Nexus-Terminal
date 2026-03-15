@@ -15,9 +15,10 @@
     display: flex;
     flex-direction: column;
     flex: 1;
-    overflow: hidden;
+    overflow-y: auto;
     padding: 24px;
     gap: 24px;
+    min-height: 0;
 }
 
 .p-metrics-row {
@@ -77,12 +78,11 @@
     border-radius: 4px;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .p-table-body {
     flex: 1;
-    overflow-y: auto;
 }
 
 .p-table {

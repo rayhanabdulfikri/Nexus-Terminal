@@ -1,99 +1,69 @@
-# NEXUS Terminal 🌐💹
+# NEXUS Terminal
 
-**NEXUS Terminal** is a premium, Bloomberg-like Global Macro Trading dashboard built with React and TypeScript. It is designed to provide professional-grade market insights, sentiment analysis, macroeconomic data, and real-time charting in a sleek, glassmorphic "Level 1.5" UI.
+**NEXUS Terminal** is a high-performance, institutional-grade Global Macro Trading platform. Built with React 19 and TypeScript, it delivers professional market intelligence, sentiment analysis, and systematic engineering tools within a high-density, glassmorphic interface.
 
-## 🚀 Features
+## Core Capabilities
 
-The application is divided into several highly functional panels, all maintaining a premium and cohesive design syntax.
+### Tactical Market Intelligence
+- **Execution Management System (EMS)**: Multi-asset order execution desk with Bloomberg-style workflow.
+- **Cross-Asset Intelligence Matrix**: Real-time performance heatmaps and inter-asset correlation tracking across G10 and Emerging markets.
+- **Global Macrometrics Terminal**: Comprehensive regime navigator, sovereign yield curve analytics, and central bank policy monitoring.
 
-### 📊 Chart Panel & Market Data
-- **Real-Time Data**: Live cryptocurrency price feeds (e.g., BTC/USD) retrieved via Binance WebSocket API.
-- **Advanced Charting**: High-performance interactive charts built with ECharts and Lightweight Charts, featuring custom thematic styling.
-- **Clean UI**: Custom minimal footprint with standard watermarks hidden for a clean professional look.
-- **Market Table**: Live snapshot of key global macro assets.
+### Sentiment & Positioning
+- **Participant Sentiment Engine**: Decomposed analysis of Institutional (COT) versus Retail positioning flows.
+- **Divergence Analytics**: Automated detection of "crowded trades" and sentiment-price misalignment.
+- **Sentiment Scorecard**: Market-wide positioning gauges and extremity signals.
 
-### 🎭 Sentiment Panel 
-- **Institutional vs. Retail Divergence**: Deep analysis comparing COT (Commitments of Traders) data against retail positioning.
-- **Market-Wide Scorecard**: 'OVERVIEW' tab featuring positioning scorecards with gauge visualizations.
-- **Alignment Confidence**: 'COMPARE' tab generating signals based on the divergence and alignment of different market participant groups.
+### Quantitative Engineering
+- **Systematic Engineering Lab**: High-iteration Monte Carlo simulations for strategy verification and backtesting.
+- **Risk Premia Factors**: Performance tracking of Momentum, Carry, and Value factors within various macro regimes.
+- **Advanced Risk Analytics**: Multi-factor risk modeling, VaR attribution, and exposure mapping.
 
-### 📰 Macro News Feed Panel
-- **Professional Feed**: A tailored macro news feed with breaking news alerts.
-- **Impact Scoring & Sentiment**: News items enriched with AI-driven or metadata-driven impact scoring and sentiment analysis.
-- **Multi-Asset Reactions**: Visual indicators of how a specific news drop impacts different asset classes.
+### Professional Alpha Workflow
+- **Alpha Research Hub**: Unified environment for Institutional reports, Thesis Playbooks, and Lead/Lag scanners.
+- **Institutional News Terminal**: Alpha-focused news feed with real-time impact analysis and filtered views.
+- **Universal Command Bar (GO)**: Keyboard-first navigation with real-time command suggestions and "GO" terminal functionality.
 
-### 🌍 Macro Regime Panel
-- Data-driven views into the current macroeconomic environment (Growth vs. Inflation matrices, etc.) using clean, data-dense layouts.
+## Technology Stack
 
----
+- **Runtime**: Node.js / React 19 / TypeScript
+- **Bundler**: Vite
+- **Visuals**: ECharts, Lucide Icons, Vanilla CSS (Design System)
+- **Data Pipeline**: Automated JSON feeds for COT, Macro, and Retail Sentiment.
 
-## 💻 Tech Stack
+## Getting Started
 
-- **Frontend Core**: React 19, TypeScript, Vite
-- **Styling**: Vanilla CSS with modern Glassmorphism, tailored Color Palettes, and Typography (Bloomberg-inspired fonts, Inter, etc.)
-- **Charting**: ECharts
-- **Data Gathering (Python Scripts)**:
-  - `eco_calendar.py`: Fetches and formats macroeconomic calendar data.
-  - `retail_sentiment.py`: Scrapes and aggregates retail sentiment positioning data.
+### Command Bar Guide
+Type the following shortcuts in the command bar followed by `GO`:
+- `PORT`: Portfolio Summary
+- `RISK`: Risk Management Engine
+- `TRADE`: Execution Desk (EMS)
+- `ENG`: Systematic Engineering Lab
+- `IDEA`: Thesis Playbook
+- `SENT`: Sentiment Engine
+- `NEWS`: News Terminal
+- `CAL`: Economic Calendar
+- `YC`: Yield Curve Analytics
+- `CB`: Central Bank Policy
 
----
+### Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-username/nexus-terminal.git
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
-## ⚙️ Installation & Setup
-
-### Prerequisites
-- Node.js (v18+)
-- Python (v3.9+) if you intend to run the data scrapers.
-
-### 1. Clone the repository
-```bash
-git clone https://github.com/your-username/nexus-terminal.git
-cd nexus-terminal
-```
-
-### 2. Frontend Setup
-Install dependencies and run the Vite development server:
-```bash
-npm install
-npm run dev
-```
-The application will be running at `http://localhost:5173`.
-
-### 3. Build for Production
-```bash
-npm run build
-npm run preview
-```
-
----
-
-## 🐍 Data Scrapers (Python)
-
-The project includes several Python scripts located in the root directory to gather external sentiment and macroeconomic data. 
-
-To run these scripts, create a virtual environment, install the requisite packages (e.g., `requests`, `pandas`, `beautifulsoup4` depending on the script requirements), and execute them:
-
-```bash
-# Create and activate virtual environment (Windows)
-python -m venv .venv
-.venv\Scripts\activate
-
-# Run data fetchers
-python eco_calendar.py
-python retail_sentiment.py
-```
-Output JSON files (like `g20_calendar.json`, `major_currencies_calendar.json`) will be automatically consumed by the frontend.
+## Design Principles
+- **Zero Placeholder Content**: All data represents live or modeled market states.
+- **Keyboard-First Workflow**: Optimized for speed via Bloomberg-style command strings.
+- **High Data Density**: Pro-grade information throughput with refined glassmorphic aesthetics.
 
 ---
-
-## 💎 Design Philosophy & UI Standards
-
-NEXUS Terminal adheres to strict premium design guidelines:
-- **No cartoon emojis**: Uses professional Unicode symbols and minimalist icons.
-- **Deep & Sleek Themes**: Specialized dark mode layouts with carefully tuned HSL color palettes.
-- **Micro-animations**: Smooth hover transitions and dynamic data updates to make the interface feel alive and responsive.
-- **Data Density**: Information architecture that accommodates professional traders who need dense data without visual clutter.
-
----
-
-## 📜 License
-This project is for private/educational use.
+*NEXUS Terminal is built for professional macro analysts and systematic strategy execution.*

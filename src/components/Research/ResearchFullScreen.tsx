@@ -106,7 +106,7 @@ const RESEARCH_DOCS = [
     }
 ];
 
-export default function ResearchFullScreen() {
+export default function ResearchFullScreen({ embedded = false }: { embedded?: boolean }) {
     const { setActiveView } = useTerminal();
     const [selectedCat, setSelectedCat] = useState("All");
     const [selectedDocId, setSelectedDocId] = useState(1);
@@ -116,12 +116,167 @@ export default function ResearchFullScreen() {
     const filteredDocs = selectedCat === "All" ? RESEARCH_DOCS : RESEARCH_DOCS.filter(d => d.cat === selectedCat);
     const activeDoc = RESEARCH_DOCS.find(d => d.id === selectedDocId) || RESEARCH_DOCS[0];
 
-    // ESC to close
     useEffect(() => {
+        if (embedded) return;
         const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setActiveView('DASHBOARD'); };
         window.addEventListener('keydown', handler);
         return () => window.removeEventListener('keydown', handler);
-    }, [setActiveView]);
+    }, [setActiveView, embedded]);
+
+    const innerContent = (
+        <div className="res-fs-content">
+            {/* Sidebar Categories */}
+            <div className="r-sidebar">
+                <div className="r-side-title">REPORT CATEGORIES</div>
+                <div style={{ flex: 1, overflowY: 'auto' }}>
+                    {categories.map(c => (
+                        <div key={c} className={`r-side-item ${selectedCat === c ? 'active' : ''}`} onClick={() => setSelectedCat(c)}>
+                            {c}
+                        </div>
+                    ))}
+                </div>
+                {/* Quick stats */}
+                <div style={{ padding: '12px 14px', borderTop: '1px solid var(--bb-teal-border)', fontSize: '9px' }}>
+                    <div style={{ color: 'var(--bb-text-dim)', fontWeight: 800, letterSpacing: '0.1em', marginBottom: '8px' }}>COVERAGE STATS</div>
+                    {[{ l: 'Total Reports', v: '3' }, { l: 'Buy Recs', v: '1' }, { l: 'Sell Recs', v: '2' }, { l: 'Neutral', v: '0' }].map(r => (
+                        <div key={r.l} style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', borderBottom: '1px solid rgba(22,51,68,0.3)' }}>
+                            <span style={{ color: 'var(--bb-text-dim)' }}>{r.l}</span>
+                            <span style={{ color: 'var(--bb-amber)', fontWeight: 700 }}>{r.v}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Feed / List of Reports */}
+            <div className="r-feed">
+                <div className="r-feed-header">
+                    <span style={{ color: 'var(--bb-amber)', fontWeight: 'bold', fontSize: '12px', letterSpacing: '0.05em' }}>LATEST PUBLICATIONS</span>
+                    <span style={{ color: 'var(--bb-text-dim)', fontSize: '11px' }}>{filteredDocs.length} Results</span>
+                </div>
+                {filteredDocs.map(doc => (
+                    <div key={doc.id} className={`r-feed-item ${selectedDocId === doc.id ? 'active' : ''}`} onClick={() => setSelectedDocId(doc.id)}>
+                        <div className="r-meta">
+                            <span>{doc.date}</span>
+                            <span>{doc.bank} · {doc.cat}</span>
+                        </div>
+                        <div className="r-title">{doc.title}</div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
+                            <div className="r-desk">{doc.desk}</div>
+                            <span style={{ padding: '2px 7px', borderRadius: '2px', fontSize: '8px', fontWeight: 800, letterSpacing: '0.05em', background: `${doc.ratingColor}18`, color: doc.ratingColor, border: `1px solid ${doc.ratingColor}40` }}>
+                                {doc.rating}
+                            </span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Viewer */}
+            <div className="r-viewer">
+                {/* View Toggle */}
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexShrink: 0 }}>
+                    {(['summary', 'full'] as const).map(v => (
+                        <button key={v} onClick={() => setView(v)} style={{
+                            padding: '5px 14px', fontSize: '9px', fontWeight: 800, letterSpacing: '0.1em',
+                            border: `1px solid ${activeView === v ? 'var(--bb-amber)' : 'var(--bb-teal-border)'}`,
+                            background: activeView === v ? 'var(--bb-amber-dim)' : 'transparent',
+                            color: activeView === v ? 'var(--bb-amber)' : 'var(--bb-text-dim)',
+                            cursor: 'pointer', borderRadius: '2px', transition: 'all 0.15s',
+                        }}>
+                            {v === 'summary' ? '⚡ AI SUMMARY' : '📄 FULL REPORT'}
+                        </button>
+                    ))}
+                </div>
+
+                {/* SUMMARY VIEW */}
+                {activeView === 'summary' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {/* Header Card */}
+                        <div style={{ background: 'rgba(8,22,30,0.9)', border: '1px solid var(--bb-teal-border)', borderTop: `3px solid ${activeDoc.ratingColor}`, borderRadius: '3px', padding: '18px 22px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                                <div>
+                                    <div style={{ fontSize: '11px', fontWeight: 900, color: activeDoc.ratingColor === '#ff4d4d' ? '#c0392b' : '#1a6fa8', letterSpacing: '0.05em', marginBottom: '4px', fontFamily: 'serif' }}>{activeDoc.bank}</div>
+                                    <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--bb-text)', lineHeight: 1.3, maxWidth: '600px' }}>{activeDoc.title}</div>
+                                </div>
+                                <span style={{ padding: '4px 10px', borderRadius: '2px', fontSize: '9px', fontWeight: 800, letterSpacing: '0.1em', background: `${activeDoc.ratingColor}20`, color: activeDoc.ratingColor, border: `1px solid ${activeDoc.ratingColor}50`, whiteSpace: 'nowrap', marginLeft: '12px', flexShrink: 0 }}>
+                                    {activeDoc.rating}
+                                </span>
+                            </div>
+                            <div style={{ display: 'flex', gap: '16px', fontSize: '9px', color: 'var(--bb-text-dim)' }}>
+                                <span><strong style={{ color: 'var(--bb-text-dim)' }}>DATE:</strong> {activeDoc.date}</span>
+                                <span><strong style={{ color: 'var(--bb-text-dim)' }}>DESK:</strong> {activeDoc.desk}</span>
+                                <span><strong style={{ color: 'var(--bb-text-dim)' }}>CLASS:</strong> {activeDoc.cat}</span>
+                            </div>
+                        </div>
+
+                        {/* AI Summary */}
+                        <div style={{ background: 'rgba(0,100,160,0.08)', border: '1px solid rgba(0,184,224,0.2)', borderLeft: '3px solid var(--bb-blue)', borderRadius: '3px', padding: '16px 20px' }}>
+                            <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-blue)', letterSpacing: '0.12em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                ⚡ NEXUS AI SUMMARY
+                            </div>
+                            <div style={{ fontSize: '12px', color: 'var(--bb-text)', lineHeight: 1.7, fontFamily: 'var(--font-sans, Inter, sans-serif)' }}>
+                                {activeDoc.summary}
+                            </div>
+                        </div>
+
+                        {/* Key Points */}
+                        <div style={{ background: 'rgba(8,22,30,0.7)', border: '1px solid var(--bb-teal-border)', borderRadius: '3px', padding: '16px 20px' }}>
+                            <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-amber)', letterSpacing: '0.12em', marginBottom: '12px' }}>
+                                ★ IMPORTANT POINTS
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {activeDoc.keyPoints.map((point, i) => (
+                                    <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', padding: '8px 10px', background: 'rgba(4,12,18,0.6)', borderRadius: '2px', borderLeft: '2px solid var(--bb-amber)' }}>
+                                        <span style={{ color: 'var(--bb-amber)', fontWeight: 800, fontSize: '10px', flexShrink: 0, fontFamily: 'var(--font-mono)' }}>0{i + 1}</span>
+                                        <span style={{ fontSize: '11px', color: 'var(--bb-text)', lineHeight: 1.5, fontFamily: 'var(--font-sans, Inter, sans-serif)' }}>{point}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Trade Recommendations */}
+                        <div style={{ background: 'rgba(8,22,30,0.7)', border: '1px solid var(--bb-teal-border)', borderRadius: '3px', padding: '16px 20px' }}>
+                            <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-green)', letterSpacing: '0.12em', marginBottom: '12px' }}>
+                                ▶ TRADE RECOMMENDATIONS
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                {activeDoc.trades.map((t, i) => {
+                                    const actionColor = t.action === 'BUY' || t.action === 'ADD' || t.action === 'ENTER' ? '#00ff8f'
+                                        : t.action === 'SELL' || t.action === 'REDUCE' || t.action === 'AVOID' ? '#ff4d4d'
+                                        : 'var(--bb-blue)';
+                                    return (
+                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '7px 10px', background: 'rgba(4,12,18,0.6)', borderRadius: '2px' }}>
+                                            <span style={{ padding: '2px 6px', borderRadius: '2px', fontSize: '8px', fontWeight: 800, letterSpacing: '0.08em', background: `${actionColor}20`, color: actionColor, border: `1px solid ${actionColor}40`, whiteSpace: 'nowrap' }}>{t.action}</span>
+                                            <span style={{ fontSize: '11px', color: 'var(--bb-amber)', fontWeight: 700, minWidth: '140px' }}>{t.asset}</span>
+                                            <span style={{ fontSize: '10px', color: 'var(--bb-text-dim)' }}>{t.note}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* FULL REPORT VIEW */}
+                {activeView === 'full' && (
+                    <div className="r-doc">
+                        <div className="r-doc-head">
+                            <div className="r-doc-bank">{activeDoc.bank}</div>
+                            <div className="r-doc-title">{activeDoc.title}</div>
+                            <div className="r-doc-info">
+                                <div><strong>Date:</strong> {activeDoc.date}</div>
+                                <div><strong>Analyst/Desk:</strong> {activeDoc.desk}</div>
+                                <div><strong>Class:</strong> {activeDoc.cat}</div>
+                            </div>
+                        </div>
+                        <div className="r-doc-abstract">{activeDoc.abstract}</div>
+                        <div className="r-doc-body" dangerouslySetInnerHTML={{ __html: activeDoc.content }}></div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+
+    if (embedded) return innerContent;
 
     return (
         <div className="res-fs-container macro-fs-container">
@@ -135,157 +290,7 @@ export default function ResearchFullScreen() {
                     <button className="macro-fs-close" onClick={() => setActiveView('DASHBOARD')}>✕ CLOSE</button>
                 </div>
             </div>
-
-            <div className="res-fs-content">
-                {/* Sidebar Categories */}
-                <div className="r-sidebar">
-                    <div className="r-side-title">REPORT CATEGORIES</div>
-                    <div style={{ flex: 1, overflowY: 'auto' }}>
-                        {categories.map(c => (
-                            <div key={c} className={`r-side-item ${selectedCat === c ? 'active' : ''}`} onClick={() => setSelectedCat(c)}>
-                                {c}
-                            </div>
-                        ))}
-                    </div>
-                    {/* Quick stats */}
-                    <div style={{ padding: '12px 14px', borderTop: '1px solid var(--bb-teal-border)', fontSize: '9px' }}>
-                        <div style={{ color: 'var(--bb-text-dim)', fontWeight: 800, letterSpacing: '0.1em', marginBottom: '8px' }}>COVERAGE STATS</div>
-                        {[{ l: 'Total Reports', v: '3' }, { l: 'Buy Recs', v: '1' }, { l: 'Sell Recs', v: '2' }, { l: 'Neutral', v: '0' }].map(r => (
-                            <div key={r.l} style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', borderBottom: '1px solid rgba(22,51,68,0.3)' }}>
-                                <span style={{ color: 'var(--bb-text-dim)' }}>{r.l}</span>
-                                <span style={{ color: 'var(--bb-amber)', fontWeight: 700 }}>{r.v}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Feed / List of Reports */}
-                <div className="r-feed">
-                    <div className="r-feed-header">
-                        <span style={{ color: 'var(--bb-amber)', fontWeight: 'bold', fontSize: '12px', letterSpacing: '0.05em' }}>LATEST PUBLICATIONS</span>
-                        <span style={{ color: 'var(--bb-text-dim)', fontSize: '11px' }}>{filteredDocs.length} Results</span>
-                    </div>
-                    {filteredDocs.map(doc => (
-                        <div key={doc.id} className={`r-feed-item ${selectedDocId === doc.id ? 'active' : ''}`} onClick={() => setSelectedDocId(doc.id)}>
-                            <div className="r-meta">
-                                <span>{doc.date}</span>
-                                <span>{doc.bank} · {doc.cat}</span>
-                            </div>
-                            <div className="r-title">{doc.title}</div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
-                                <div className="r-desk">{doc.desk}</div>
-                                <span style={{ padding: '2px 7px', borderRadius: '2px', fontSize: '8px', fontWeight: 800, letterSpacing: '0.05em', background: `${doc.ratingColor}18`, color: doc.ratingColor, border: `1px solid ${doc.ratingColor}40` }}>
-                                    {doc.rating}
-                                </span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Viewer */}
-                <div className="r-viewer">
-                    {/* View Toggle */}
-                    <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexShrink: 0 }}>
-                        {(['summary', 'full'] as const).map(v => (
-                            <button key={v} onClick={() => setView(v)} style={{
-                                padding: '5px 14px', fontSize: '9px', fontWeight: 800, letterSpacing: '0.1em',
-                                border: `1px solid ${activeView === v ? 'var(--bb-amber)' : 'var(--bb-teal-border)'}`,
-                                background: activeView === v ? 'var(--bb-amber-dim)' : 'transparent',
-                                color: activeView === v ? 'var(--bb-amber)' : 'var(--bb-text-dim)',
-                                cursor: 'pointer', borderRadius: '2px', transition: 'all 0.15s',
-                            }}>
-                                {v === 'summary' ? '⚡ AI SUMMARY' : '📄 FULL REPORT'}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* SUMMARY VIEW */}
-                    {activeView === 'summary' && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            {/* Header Card */}
-                            <div style={{ background: 'rgba(8,22,30,0.9)', border: '1px solid var(--bb-teal-border)', borderTop: `3px solid ${activeDoc.ratingColor}`, borderRadius: '3px', padding: '18px 22px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                                    <div>
-                                        <div style={{ fontSize: '11px', fontWeight: 900, color: activeDoc.ratingColor === '#ff4d4d' ? '#c0392b' : '#1a6fa8', letterSpacing: '0.05em', marginBottom: '4px', fontFamily: 'serif' }}>{activeDoc.bank}</div>
-                                        <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--bb-text)', lineHeight: 1.3, maxWidth: '600px' }}>{activeDoc.title}</div>
-                                    </div>
-                                    <span style={{ padding: '4px 10px', borderRadius: '2px', fontSize: '9px', fontWeight: 800, letterSpacing: '0.1em', background: `${activeDoc.ratingColor}20`, color: activeDoc.ratingColor, border: `1px solid ${activeDoc.ratingColor}50`, whiteSpace: 'nowrap', marginLeft: '12px', flexShrink: 0 }}>
-                                        {activeDoc.rating}
-                                    </span>
-                                </div>
-                                <div style={{ display: 'flex', gap: '16px', fontSize: '9px', color: 'var(--bb-text-dim)' }}>
-                                    <span><strong style={{ color: 'var(--bb-text-dim)' }}>DATE:</strong> {activeDoc.date}</span>
-                                    <span><strong style={{ color: 'var(--bb-text-dim)' }}>DESK:</strong> {activeDoc.desk}</span>
-                                    <span><strong style={{ color: 'var(--bb-text-dim)' }}>CLASS:</strong> {activeDoc.cat}</span>
-                                </div>
-                            </div>
-
-                            {/* AI Summary */}
-                            <div style={{ background: 'rgba(0,100,160,0.08)', border: '1px solid rgba(0,184,224,0.2)', borderLeft: '3px solid var(--bb-blue)', borderRadius: '3px', padding: '16px 20px' }}>
-                                <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-blue)', letterSpacing: '0.12em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    ⚡ NEXUS AI SUMMARY
-                                </div>
-                                <div style={{ fontSize: '12px', color: 'var(--bb-text)', lineHeight: 1.7, fontFamily: 'var(--font-sans, Inter, sans-serif)' }}>
-                                    {activeDoc.summary}
-                                </div>
-                            </div>
-
-                            {/* Key Points */}
-                            <div style={{ background: 'rgba(8,22,30,0.7)', border: '1px solid var(--bb-teal-border)', borderRadius: '3px', padding: '16px 20px' }}>
-                                <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-amber)', letterSpacing: '0.12em', marginBottom: '12px' }}>
-                                    ★ IMPORTANT POINTS
-                                </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    {activeDoc.keyPoints.map((point, i) => (
-                                        <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', padding: '8px 10px', background: 'rgba(4,12,18,0.6)', borderRadius: '2px', borderLeft: '2px solid var(--bb-amber)' }}>
-                                            <span style={{ color: 'var(--bb-amber)', fontWeight: 800, fontSize: '10px', flexShrink: 0, fontFamily: 'var(--font-mono)' }}>0{i + 1}</span>
-                                            <span style={{ fontSize: '11px', color: 'var(--bb-text)', lineHeight: 1.5, fontFamily: 'var(--font-sans, Inter, sans-serif)' }}>{point}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Trade Recommendations */}
-                            <div style={{ background: 'rgba(8,22,30,0.7)', border: '1px solid var(--bb-teal-border)', borderRadius: '3px', padding: '16px 20px' }}>
-                                <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-green)', letterSpacing: '0.12em', marginBottom: '12px' }}>
-                                    ▶ TRADE RECOMMENDATIONS
-                                </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                    {activeDoc.trades.map((t, i) => {
-                                        const actionColor = t.action === 'BUY' || t.action === 'ADD' || t.action === 'ENTER' ? '#00ff8f'
-                                            : t.action === 'SELL' || t.action === 'REDUCE' || t.action === 'AVOID' ? '#ff4d4d'
-                                            : 'var(--bb-blue)';
-                                        return (
-                                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '7px 10px', background: 'rgba(4,12,18,0.6)', borderRadius: '2px' }}>
-                                                <span style={{ padding: '2px 6px', borderRadius: '2px', fontSize: '8px', fontWeight: 800, letterSpacing: '0.08em', background: `${actionColor}20`, color: actionColor, border: `1px solid ${actionColor}40`, whiteSpace: 'nowrap' }}>{t.action}</span>
-                                                <span style={{ fontSize: '11px', color: 'var(--bb-amber)', fontWeight: 700, minWidth: '140px' }}>{t.asset}</span>
-                                                <span style={{ fontSize: '10px', color: 'var(--bb-text-dim)' }}>{t.note}</span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* FULL REPORT VIEW */}
-                    {activeView === 'full' && (
-                        <div className="r-doc">
-                            <div className="r-doc-head">
-                                <div className="r-doc-bank">{activeDoc.bank}</div>
-                                <div className="r-doc-title">{activeDoc.title}</div>
-                                <div className="r-doc-info">
-                                    <div><strong>Date:</strong> {activeDoc.date}</div>
-                                    <div><strong>Analyst/Desk:</strong> {activeDoc.desk}</div>
-                                    <div><strong>Class:</strong> {activeDoc.cat}</div>
-                                </div>
-                            </div>
-                            <div className="r-doc-abstract">{activeDoc.abstract}</div>
-                            <div className="r-doc-body" dangerouslySetInnerHTML={{ __html: activeDoc.content }}></div>
-                        </div>
-                    )}
-                </div>
-            </div>
+            {innerContent}
         </div>
     );
 }

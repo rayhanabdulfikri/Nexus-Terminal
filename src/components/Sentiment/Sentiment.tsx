@@ -124,7 +124,7 @@ const Sentiment = ({ defaultView = 'COT' }: SentimentProps) => {
     }, [actionTab, explorerType, selectedAsset]);
 
     const renderGauge = (label: string, value: string, color: string, sub: string, score: number) => (
-        <div className="tp-gauge-box animate-fade">
+        <div key={label} className="tp-gauge-box animate-fade">
             <div className="tp-gauge-label">{label}</div>
             <div className="tp-gauge-main">
                 <span className="tp-gauge-val" style={{ color }}>{value}</span>
@@ -149,7 +149,7 @@ const Sentiment = ({ defaultView = 'COT' }: SentimentProps) => {
                 <div style={{ flex: 1 }}></div>
                 <div className="tp-connection-status">
                     <span className="pulse-dot"></span>
-                    TERMINAL PRO L1.5 CONNECTED
+                    TERMINAL PRO CONNECTED
                 </div>
             </div>
 
@@ -191,8 +191,8 @@ const Sentiment = ({ defaultView = 'COT' }: SentimentProps) => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {cotTableData.map((row, i) => (
-                                    <tr key={i} className="tp-row-premium">
+                                {cotTableData.map((row) => (
+                                    <tr key={row.instrument} className="tp-row-premium">
                                         <td>{row.instrument} <span className="fs-9 text-dim">{row.ccy}</span></td>
                                         <td className="text-bright">{(row.oi / 1000).toFixed(0)}K</td>
                                         <td className={`border-l fw-800 ${row.lev.net >= 0 ? 'text-pos' : 'text-neg'}`}>{row.lev.net >= 0 ? '+' : ''}{(row.lev.net / 1000).toFixed(1)}K</td>
@@ -225,8 +225,8 @@ const Sentiment = ({ defaultView = 'COT' }: SentimentProps) => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {retailData.map((pair, idx) => (
-                                    <tr key={idx} className="tp-row-premium" onClick={() => setActiveTicker(pair.pair.replace('/',''))}>
+                                {retailData.map((pair) => (
+                                    <tr key={pair.pair} className="tp-row-premium" onClick={() => setActiveTicker(pair.pair.replace('/',''))}>
                                         <td className="text-amber fw-800">{pair.pair}</td>
                                         <td className="text-pos">{pair.long_pct}%</td>
                                         <td className="text-neg">{pair.short_pct}%</td>
@@ -290,8 +290,8 @@ const Sentiment = ({ defaultView = 'COT' }: SentimentProps) => {
                                 { pair: 'GBP/USD', inst: '+42K LONG', retail: '33/67', sig: 'Divergent (Bull)', conf: 85, react: 'Breakout' },
                                 { pair: 'USD/JPY', inst: '-112K SHORT', retail: '64/36', sig: 'Divergent (Bear)', conf: 92, react: 'Rejection' },
                                 { pair: 'AUD/USD', inst: '-74K SHORT', retail: '74/26', sig: 'Aligned (Bear)', conf: 55, react: 'Crowded' },
-                            ].map((row, i) => (
-                                <tr key={i} className="tp-row-premium">
+                            ].map((row) => (
+                                <tr key={row.pair} className="tp-row-premium">
                                     <td className="text-amber fw-800">{row.pair}</td>
                                     <td className={row.inst.includes('LONG') ? 'text-pos' : 'text-neg'}>{row.inst}</td>
                                     <td>

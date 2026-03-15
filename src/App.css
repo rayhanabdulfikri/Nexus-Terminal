@@ -6,7 +6,7 @@
 }
 
 /* ═══════════════════════════════════════════
-   NEXUS TERMINAL — DESIGN SYSTEM v2.0
+   NEXUS TERMINAL — DESIGN SYSTEM
    Professional Bloomberg-Grade UI
 ═══════════════════════════════════════════ */
 
@@ -417,3 +417,20 @@ body {
 
 /* ── w-full ── */
 .w-full { width: 100%; }
+
+/* ── Loading Overlay ── */
+.loading-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--bb-black);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bb-blue);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  z-index: 10000;
+  animation: blink 1.5s infinite;
+}

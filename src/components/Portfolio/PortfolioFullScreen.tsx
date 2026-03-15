@@ -3,6 +3,7 @@ import * as echarts from 'echarts';
 import './PortfolioFullScreen.css';
 import '../MacroRegime/MacroFullScreen.css';
 import { useTerminal } from '../../context/TerminalContext';
+import { X } from 'lucide-react';
 
 const INITIAL_POSITIONS = [
     { ticker: "AAPL", asset: "Equity", dir: "LONG", size: 15000, entry: 165.40, mark: 173.50, risk: "Med" },
@@ -147,7 +148,9 @@ export default function PortfolioFullScreen() {
                     <h1 className="macro-fs-title">PORTFOLIO & RISK MANAGEMENT</h1>
                     <div className="macro-fs-subtitle">REAL-TIME P&L AND EXPOSURE TRACKER • {new Date().toLocaleTimeString()}</div>
                 </div>
-                <button className="macro-fs-close" onClick={() => setActiveView("DASHBOARD")}>✕ CLOSE DASHBOARD</button>
+                <button className="macro-fs-close" onClick={() => setActiveView("DASHBOARD")} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <X size={14} /> CLOSE
+                </button>
             </div>
 
             <div className="port-fs-content">

@@ -1,4 +1,4 @@
-.trade-v2-container {
+.trade-fs-container {
     display: flex;
     flex-direction: column;
     height: 100vh;
@@ -9,7 +9,7 @@
     font-family: var(--font-mono);
 }
 
-.trade-v2-body {
+.trade-fs-body {
     display: flex;
     flex: 1;
     min-height: 0;
@@ -17,31 +17,31 @@
     gap: 0;
 }
 
-.trade-v2-left {
+.trade-fs-left {
     width: 340px;
     min-width: 300px;
     border-right: 1px solid var(--bb-teal-border);
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow-y: auto;
     gap: 0;
 }
 
-.trade-v2-center {
+.trade-fs-center {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow-y: auto;
     border-right: 1px solid var(--bb-teal-border);
 }
 
-.trade-v2-right {
+.trade-fs-right {
     width: 300px;
     min-width: 260px;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow-y: auto;
 }
 
 .trade-panel-box {

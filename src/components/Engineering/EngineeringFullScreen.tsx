@@ -1,7 +1,19 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as echarts from 'echarts';
+import { Activity, Play, TrendingUp, Zap, X } from 'lucide-react';
 import '../MacroRegime/MacroFullScreen.css';
 import { useTerminal } from '../../context/TerminalContext';
+
+// ── Strategy data generator ──
+function generateStrategyEquity(volatility: number, drift: number, points: number = 60) {
+    let val = 100;
+    const data: number[] = [val];
+    for (let i = 1; i < points; i++) {
+        val = val * (1 + (drift / points) + (Math.random() - 0.5) * (volatility / Math.sqrt(points)));
+        data.push(parseFloat(val.toFixed(2)));
+    }
+    return data;
+}
 
 // ── Strategy definitions ──
 const STRATEGIES = [
@@ -11,7 +23,7 @@ const STRATEGIES = [
         color: "#00e676",
         desc: "Trend-following: buy assets going up, sell going down. Works best in trending regimes.",
         metrics: { sharpe: 1.42, cagr: 18.4, maxDD: -14.2, winRate: 58.2, trades: 1842 },
-        equity: [100, 108, 115, 112, 124, 138, 145, 142, 158, 172, 168, 195],
+        equity: generateStrategyEquity(0.25, 0.22, 60),
     },
     {
         id: "carry",
@@ -19,7 +31,7 @@ const STRATEGIES = [
         color: "#ffaa00",
         desc: "Borrow low-yielding, invest high-yielding. Best in low volatility, risk-on regimes.",
         metrics: { sharpe: 1.18, cagr: 12.8, maxDD: -18.5, winRate: 63.1, trades: 624 },
-        equity: [100, 104, 109, 106, 112, 118, 122, 119, 126, 131, 128, 138],
+        equity: generateStrategyEquity(0.15, 0.14, 60),
     },
     {
         id: "value",
@@ -27,7 +39,7 @@ const STRATEGIES = [
         color: "#9c6fff",
         desc: "Mean-reversion: buy undervalued, sell overvalued based on PPP & fair value models.",
         metrics: { sharpe: 0.95, cagr: 9.2, maxDD: -22.1, winRate: 54.8, trades: 420 },
-        equity: [100, 102, 98, 103, 108, 105, 111, 115, 112, 118, 122, 127],
+        equity: generateStrategyEquity(0.20, 0.12, 60),
     },
     {
         id: "riskparity",
@@ -35,7 +47,7 @@ const STRATEGIES = [
         color: "#00b8e0",
         desc: "Allocate by risk contribution, not capital. Equal-risk weighting across asset classes.",
         metrics: { sharpe: 1.35, cagr: 11.6, maxDD: -8.4, winRate: 61.5, trades: 280 },
-        equity: [100, 105, 102, 108, 111, 114, 118, 116, 121, 125, 123, 130],
+        equity: generateStrategyEquity(0.08, 0.10, 60),
     },
 ];
 
@@ -51,7 +63,7 @@ const RISK_PREMIA = [
     { factor: "Size Premium",    ret: 2.9,  vol: 14.2, sharpe: 0.20, regime: "Risk-On" },
 ];
 
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+// MONTHS removed (unused)
 
 // ── Backtest dummy trade log ──
 const BACKTEST_TRADES = [
@@ -127,7 +139,7 @@ export default function EngineeringFullScreen() {
         setLiveLog([]);
 
         const logMessages = [
-            '[ENGINE] Initializing Mean Reversion v1.2 strategy...',
+            '[ENGINE] Initializing Mean Reversion strategy...',
             '[DATA] Loading 5-year OHLCV data: EURUSD, USDJPY, XAUUSD, BTCUSD...',
             '[ENGINE] Running 1,200,000 Monte Carlo iterations...',
             '[FILTER] Applying regime filter: Expansion & Risk-On only...',
@@ -168,7 +180,7 @@ export default function EngineeringFullScreen() {
             tooltip: { trigger: 'axis', backgroundColor: '#0b2730', borderColor: '#1a3a4a', textStyle: { color: '#cbd5e1' } },
             legend: { data: STRATEGIES.map(s => s.label), bottom: 0, textStyle: { color: '#5c8397' }, icon: 'circle', itemWidth: 8, itemHeight: 8 },
             grid: { left: '6%', right: '3%', bottom: '12%', top: '8%' },
-            xAxis: { type: 'category', data: MONTHS, axisLabel: { color: '#5c8397', fontSize: 10 }, axisLine: { lineStyle: { color: '#163344' } } },
+            xAxis: { type: 'category', data: Array.from({length: 60}, (_, i) => `W${i+1}`), axisLabel: { color: '#5c8397', fontSize: 8, interval: 4 }, axisLine: { lineStyle: { color: '#163344' } } },
             yAxis: { type: 'value', axisLabel: { color: '#5c8397', fontSize: 10 }, splitLine: { lineStyle: { color: '#163344', type: 'dashed' } } },
             series: STRATEGIES.map(s => ({
                 name: s.label, type: 'line',
@@ -301,10 +313,9 @@ export default function EngineeringFullScreen() {
                         STRATEGY FRAMEWORK · FACTORS & RISK PREMIA · BACKTESTING · {new Date().toLocaleDateString()}
                     </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <span style={{ fontSize: '10px', color: 'var(--bb-text-dim)' }}><span className="kbd" style={{ fontSize: '9px' }}>ESC</span> CLOSE</span>
-                    <button className="macro-fs-close" onClick={() => setActiveView('DASHBOARD')}>✕ CLOSE</button>
-                </div>
+                <button className="macro-fs-close" onClick={() => setActiveView('DASHBOARD')} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <X size={14} /> CLOSE
+                </button>
             </div>
 
             {/* Tab Bar */}
@@ -326,7 +337,7 @@ export default function EngineeringFullScreen() {
                 ))}
             </div>
 
-            <div className="port-fs-content" style={{ overflow: 'hidden' }}>
+            <div className="port-fs-content">
 
                 {/* ──────────── TAB 1: Strategy Comparison ──────────── */}
                 {activeTab === 'systematic' && (
@@ -357,12 +368,40 @@ export default function EngineeringFullScreen() {
                                 </div>
                             ))}
                         </div>
-                        <div style={{ flex: 1, padding: '0 12px 12px', minHeight: 0 }}>
-                            <div style={{ background: 'rgba(8,22,30,0.6)', border: '1px solid var(--bb-teal-border)', borderRadius: '3px', height: '100%', padding: '8px' }}>
-                                <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-blue)', letterSpacing: '0.1em', marginBottom: '4px' }}>
-                                    EQUITY CURVE COMPARISON — NORMALIZED (BASE 100)
+                        <div style={{ flex: 1, padding: '0 12px 12px', minHeight: 0, display: 'flex', gap: '12px' }}>
+                            {/* Equity Curve */}
+                            <div style={{ flex: 2, background: 'rgba(8,22,30,0.6)', border: '1px solid var(--bb-teal-border)', borderRadius: '3px', padding: '8px', display: 'flex', flexDirection: 'column' }}>
+                                <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-blue)', letterSpacing: '0.1em', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <TrendingUp size={12} /> EQUITY CURVE COMPARISON — NORMALIZED (BASE 100)
                                 </div>
-                                <div ref={chartRefEquity} style={{ width: '100%', height: 'calc(100% - 24px)' }} />
+                                <div ref={chartRefEquity} style={{ width: '100%', flex: 1 }} />
+                            </div>
+
+                            {/* Risk Premia Factors */}
+                            <div style={{ flex: 1, background: 'rgba(8,22,30,0.6)', border: '1px solid var(--bb-teal-border)', borderRadius: '3px', padding: '8px', display: 'flex', flexDirection: 'column' }}>
+                                <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-amber)', letterSpacing: '0.1em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <Activity size={12} /> RISK PREMIA FACTOR ANALYSIS
+                                </div>
+                                <div style={{ flex: 1, overflowY: 'auto' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9px' }}>
+                                        <thead>
+                                            <tr style={{ textAlign: 'left', color: 'var(--bb-text-dim)', borderBottom: '1px solid var(--bb-teal-border)' }}>
+                                                <th style={{ padding: '6px 4px' }}>FACTOR</th>
+                                                <th style={{ padding: '6px 4px' }}>RET%</th>
+                                                <th style={{ padding: '6px 4px' }}>SHARPE</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {RISK_PREMIA.map((rp, i) => (
+                                                <tr key={i} style={{ borderBottom: '1px solid rgba(22,51,68,0.3)' }}>
+                                                    <td style={{ padding: '6px 4px', color: 'var(--bb-text)' }}>{rp.factor}</td>
+                                                    <td style={{ padding: '6px 4px', color: rp.ret > 4 ? 'var(--bb-green)' : 'var(--bb-blue)' }}>{rp.ret.toFixed(1)}%</td>
+                                                    <td style={{ padding: '6px 4px', fontWeight: 700, color: 'var(--bb-text-dim)' }}>{rp.sharpe.toFixed(2)}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </>
@@ -377,7 +416,7 @@ export default function EngineeringFullScreen() {
                             <div style={{ padding: '12px', borderBottom: '1px solid var(--bb-teal-border)', flexShrink: 0 }}>
                                 <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--bb-amber)', letterSpacing: '0.12em', marginBottom: '10px' }}>BACKTEST CONFIGURATION</div>
                                 {[
-                                    { label: 'STRATEGY', value: 'Mean Reversion v1.2' },
+                                    { label: 'STRATEGY', value: 'Mean Reversion' },
                                     { label: 'UNIVERSE', value: 'G10 FX + Gold + BTC' },
                                     { label: 'PERIOD', value: 'Jan 2023 – Dec 2024' },
                                     { label: 'INITIAL CAPITAL', value: '$10,000,000' },
@@ -396,8 +435,10 @@ export default function EngineeringFullScreen() {
                                     color: isRunning ? 'var(--bb-blue)' : '#00ff8f',
                                     fontSize: '10px', fontWeight: 800, letterSpacing: '0.1em', borderRadius: '2px',
                                     border: '1px solid rgba(0,255,143,0.2)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
                                 }}>
-                                    {isRunning ? `▶ RUNNING... ${progress}%` : '▶ RUN BACKTEST'}
+                                    {isRunning ? <Zap size={12} className="animate-pulse" /> : <Play size={12} />}
+                                    {isRunning ? `RUNNING... ${progress}%` : 'RUN BACKTEST'}
                                 </button>
                                 {isRunning && (
                                     <div style={{ marginTop: '6px', background: 'rgba(22,51,68,0.5)', borderRadius: '2px', height: '4px', overflow: 'hidden' }}>

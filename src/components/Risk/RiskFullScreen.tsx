@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import * as echarts from 'echarts';
 import '../MacroRegime/MacroFullScreen.css';
 import { useTerminal } from '../../context/TerminalContext';
+import { X } from 'lucide-react';
 
 export default function RiskFullScreen() {
     const { setActiveView } = useTerminal();
@@ -83,7 +84,9 @@ export default function RiskFullScreen() {
                     <h1 className="macro-fs-title">RISK ANALYTICS & MONITORING</h1>
                     <div className="macro-fs-subtitle">MULTI-FACTOR RISK & EXPOSURE ENGINE • {new Date().toLocaleDateString()}</div>
                 </div>
-                <button className="macro-fs-close" onClick={() => setActiveView("DASHBOARD")}>✕ CLOSE DASHBOARD</button>
+                <button className="macro-fs-close" onClick={() => setActiveView("DASHBOARD")} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <X size={14} /> CLOSE
+                </button>
             </div>
 
             <div className="port-fs-content">
